@@ -1,0 +1,773 @@
+import React, { useState, useRef, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+import { 
+  ShieldCheck, 
+  AlertCircle, 
+  Plus, 
+  CheckCircle2, 
+  Coins, 
+  Check, 
+  Tv, 
+  Image as ImageIcon,
+  Sparkles,
+  Upload,
+  Trash2
+} from 'lucide-react';
+import { Campaign, UserProfile } from '../types';
+import { playSuccessFanfare } from '../utils/audio';
+
+const YouTubeIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
+const InstagramIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="3" ry="3"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+  </svg>
+);
+
+const YouTubeShortsIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.94c-1.84.96-2.53 3.23-1.56 5.06 1 1.87 3.27 2.54 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25zM10 14.65v-5.3L15 12l-5 2.65z"/>
+  </svg>
+);
+
+interface CreateTaskViewProps {
+  user: UserProfile;
+  onCreateCampaign: (newCampaign: Campaign, totalCost: number) => void;
+  onNavigate: (tabId: string) => void;
+  campaigns?: Campaign[];
+}
+
+export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
+  user,
+  onCreateCampaign,
+  onNavigate,
+  campaigns = [],
+}) => {
+  const [platform, setPlatform] = useState<'youtube' | 'instagram'>('youtube');
+  const [isShort, setIsShort] = useState<boolean>(false);
+  const [instaActionType, setInstaActionType] = useState<'follow_and_like' | 'follow_only' | 'like_reel'>('follow_and_like');
+  
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
+  const [channelName, setChannelName] = useState<string>(user.name || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Computed platform helpers
+  const isLongVideo = platform === 'youtube' && !isShort;
+  const isShortsVideo = platform === 'youtube' && isShort;
+  const isInstagram = platform === 'instagram';
+
+  // Targets & Budget
+  const [targetSubscribers, setTargetSubscribers] = useState<number>(50);
+  const watchDurationSec = 180; // Fixed 3 Minutes (180s) across all content types
+  const [rewardBugs, setRewardBugs] = useState<number>(1);
+  const totalCost = targetSubscribers * 1.0;
+  const isBalanceSufficient = user.bugBalance >= totalCost;
+  
+  // Verification quiz
+  const [question, setQuestion] = useState<string>('');
+  const [options, setOptions] = useState<string[]>(['', '', '', '']);
+  const [correctAnswerIndex, setCorrectAnswerIndex] = useState<number>(0);
+  
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
+
+  const extractYouTubeId = (url: string): string => {
+    if (!url) return '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : '';
+  };
+
+  const detectedYtId = platform === 'youtube' ? extractYouTubeId(videoUrl) : '';
+
+  useEffect(() => {
+    if (detectedYtId && (!thumbnailUrl || thumbnailUrl.includes('img.youtube.com'))) {
+      setThumbnailUrl(`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`);
+    }
+  }, [detectedYtId]);
+
+  const handleTypeChange = (p: 'youtube' | 'instagram', shortFlag: boolean = false) => {
+    setPlatform(p);
+    setIsShort(shortFlag);
+    setErrorMsg(null);
+
+    if (p === 'instagram') {
+      if (thumbnailUrl.includes('img.youtube.com')) {
+        setThumbnailUrl('');
+      }
+    }
+  };
+
+  const handleOptionChange = (idx: number, val: string) => {
+    const updated = [...options];
+    updated[idx] = val;
+    setOptions(updated);
+  };
+
+  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please upload an image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 5MB.');
+      return;
+    }
+
+    setErrorMsg(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setThumbnailUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDropThumbnail = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please upload an image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 5MB.');
+      return;
+    }
+
+    setErrorMsg(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setThumbnailUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearThumbnail = () => {
+    if (detectedYtId) {
+      setThumbnailUrl(`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`);
+    } else {
+      setThumbnailUrl('');
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeploy = () => {
+    setErrorMsg(null);
+
+    if (!title.trim()) {
+      setErrorMsg('Please enter a campaign headline/title.');
+      return;
+    }
+
+    if (!videoUrl.trim()) {
+      setErrorMsg('Please provide a video link.');
+      return;
+    }
+
+    if (platform === 'youtube' && !detectedYtId) {
+      setErrorMsg('Please enter a valid YouTube video or shorts link.');
+      return;
+    }
+
+    if (!question.trim()) {
+      setErrorMsg('Please formulate an attention-verification MCQ question.');
+      return;
+    }
+
+    const validOptions = options.map(o => o.trim()).filter(Boolean);
+    if (validOptions.length < 2) {
+      setErrorMsg('Please provide at least 2 distinct multiple choice options.');
+      return;
+    }
+
+    if (!isBalanceSufficient) {
+      setErrorMsg(`Insufficient BUGs balance. Required: ₹${totalCost}, Available: ₹${user.bugBalance}`);
+      return;
+    }
+
+    const finalYtId = detectedYtId || (platform === 'youtube' ? 'dQw4w9WgXcQ' : '');
+    const fallbackThumbnail = isInstagram
+      ? (thumbnailUrl.trim() || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&auto=format&fit=crop&q=80')
+      : (thumbnailUrl.trim() || (finalYtId ? `https://img.youtube.com/vi/${finalYtId}/hqdefault.jpg` : ''));
+
+    const taskDescription = isInstagram
+      ? `Instagram ${instaActionType === 'follow_only' ? 'Follow' : instaActionType === 'like_reel' ? 'Like' : 'Follow & Like'} task deployed by ${user.name}. Open Instagram, engage authentically, and complete verification.`
+      : isShortsVideo
+      ? `Shorts task deployed by ${user.name}. Watch authentic vertical short and verify.`
+      : `Task deployed by ${user.name}. Watch authentic duration and pass anti-cheat verification.`;
+
+    const newCamp: Campaign = {
+      id: `camp_${Date.now()}`,
+      youtubeId: finalYtId,
+      videoUrl: videoUrl.trim(),
+      title: title.trim(),
+      channelName: channelName.trim() || user.name || (isInstagram ? 'Instagram Creator' : 'Verified Creator'),
+      channelAvatar: user.avatar,
+      channelId: `ch_${Date.now()}`,
+      subscribersCount: user.channelSubscribers || 1000,
+      currentProgress: 0,
+      targetSubscribers,
+      rewardBugs,
+      watchDurationSec,
+      thumbnailUrl: fallbackThumbnail,
+      platform,
+      isShort,
+      question: question.trim(),
+      options: options.map(o => o.trim() || 'Option'),
+      correctAnswerIndex,
+      isVip: false,
+      category: platform === 'instagram' ? 'Reels' : isShort ? 'Shorts' : 'YouTube Video',
+      viewsCount: 0,
+      likesCount: 0,
+      uploadedAt: 'Just now',
+      status: 'active',
+      description: taskDescription,
+      createdAt: Date.now(),
+      creatorId: user.id,
+    };
+
+    onCreateCampaign(newCamp, totalCost);
+    playSuccessFanfare();
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#31465A', '#C7DFA3', '#89B9E6', '#ffffff'],
+    });
+
+    setIsSuccess(true);
+    setTimeout(() => {
+      setIsSuccess(false);
+      onNavigate('tasks');
+    }, 1800);
+  };
+
+  return (
+    <div className="px-4 sm:px-6 md:px-8 py-5 sm:py-6 space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-deep-ocean dark:text-slate-100 min-h-full transition-colors max-w-7xl mx-auto">
+      
+      {/* Studio Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-deep-ocean dark:text-slate-100">
+              Watch Task Creator Studio
+            </h1>
+            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] border border-emerald-200 dark:border-emerald-800/60 uppercase">
+              ENGINE V2
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Configure video duration, rewards, anti-cheat MCQ questions, and launch tasks
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => onNavigate('tasks')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#131D28] hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-subtle transition-colors cursor-pointer"
+          >
+            <Tv className="w-3.5 h-3.5 text-slate-400" />
+            <span>View All Tasks ({campaigns.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main 2-Column Studio Grid (8 cols + 4 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column: Form Steps (8 cols) */}
+        <div className="lg:col-span-8 space-y-5">
+          
+          {/* Card 1: 1. CONTENT SOURCE & PLATFORM (STEP 1 OF 2) */}
+          <div className="p-5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-deep-ocean dark:text-slate-100">
+                1. CONTENT SOURCE &amp; PLATFORM
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                STEP 1 OF 2
+              </span>
+            </div>
+
+            {/* Platform Selection */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Select Platform
+              </label>
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-slate-50 dark:bg-[#16222F] border border-slate-200 dark:border-slate-700/80">
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange('youtube', false)}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    platform === 'youtube' && !isShort
+                      ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-slate-100 shadow-subtle border border-slate-200/80 dark:border-slate-700/80 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-deep-ocean dark:hover:text-white'
+                  }`}
+                >
+                  <YouTubeIcon className="w-3.5 h-3.5 text-rose-500" />
+                  <span>YouTube Video</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange('youtube', true)}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    platform === 'youtube' && isShort
+                      ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-slate-100 shadow-subtle border border-slate-200/80 dark:border-slate-700/80 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-deep-ocean dark:hover:text-white'
+                  }`}
+                >
+                  <YouTubeShortsIcon className="w-3.5 h-3.5 text-rose-500" />
+                  <span>YouTube Shorts</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange('instagram', false)}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    platform === 'instagram'
+                      ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-slate-100 shadow-subtle border border-slate-200/80 dark:border-slate-700/80 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-deep-ocean dark:hover:text-white'
+                  }`}
+                >
+                  <InstagramIcon className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Instagram Reel</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Campaign Title */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {isInstagram ? 'Instagram Reel Title / Headline' : isShortsVideo ? 'YouTube Shorts Title' : 'Campaign Title'} <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={isInstagram ? 'e.g. My New Aesthetic Reel Drop 2026' : isShortsVideo ? 'e.g. Crazy Gaming Clutches in 30s' : 'e.g. Watch New Tech Review 2026'}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 rounded-lg text-deep-ocean dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors"
+              />
+            </div>
+
+            {/* Video URL & Channel Profile URL */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isInstagram ? 'Instagram Reel / Post URL' : isShortsVideo ? 'YouTube Shorts URL' : 'YouTube Video URL'} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder={
+                    isInstagram
+                      ? 'https://www.instagram.com/reel/...'
+                      : isShortsVideo
+                      ? 'https://www.youtube.com/shorts/...'
+                      : 'https://www.youtube.com/watch?v=...'
+                  }
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 rounded-lg text-deep-ocean dark:text-slate-100 font-mono placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {isInstagram ? 'Instagram Handle / Profile URL (optional)' : 'Channel / Creator Profile URL (optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={channelName}
+                  onChange={(e) => setChannelName(e.target.value)}
+                  placeholder={isInstagram ? 'https://instagram.com/username or @username' : 'https://youtube.com/@channelname'}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 rounded-lg text-deep-ocean dark:text-slate-100 font-mono placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Universal Thumbnail Upload (No URLs) */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Thumbnail / Cover Image</span>
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  Image Upload Only (No URL Needed)
+                </span>
+              </div>
+
+              {/* Hidden File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handleThumbnailUpload}
+                className="hidden"
+              />
+
+              {thumbnailUrl ? (
+                <div className="p-3.5 bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-4">
+                  <div className={`relative ${isInstagram || isShortsVideo ? 'w-24 aspect-[9/16]' : 'w-44 aspect-video'} bg-black overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 shadow-2xs`}>
+                    <img
+                      src={thumbnailUrl}
+                      alt="Thumbnail Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/80 text-[8.5px] font-mono text-emerald-400">
+                      {thumbnailUrl.startsWith('data:image') ? 'Uploaded File' : 'Auto-detected'}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-1 text-center sm:text-left">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                      {thumbnailUrl.startsWith('data:image') ? 'Custom Uploaded Thumbnail' : 'YouTube Detected Thumbnail'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      This image will be displayed on the Home feed and Tasks list.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-[#1E2C39] dark:bg-slate-700 hover:bg-[#16222F] text-white text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Upload className="w-3 h-3 text-emerald-400" />
+                        <span>Upload Custom Image</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearThumbnail}
+                        className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-rose-500 text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        title="Remove custom thumbnail"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropThumbnail}
+                  className="p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/70 dark:hover:border-emerald-500/70 bg-slate-50/50 dark:bg-[#0E1620]/50 hover:bg-slate-50 dark:hover:bg-[#0E1620] transition-all cursor-pointer text-center space-y-2 group"
+                >
+                  <div className="w-10 h-10 mx-auto bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                      Click to upload thumbnail image or drag &amp; drop
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      Supports PNG, JPG, JPEG, WEBP up to 5MB (No image URLs required)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {detectedYtId && !thumbnailUrl.startsWith('data:image') && (
+                <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-mono text-emerald-700 dark:text-[#C7DFA3] flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 shrink-0" />
+                  <span>YouTube ID detected: {detectedYtId} (You can keep this or upload a custom image above)</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 2: 2. ATTENTION VERIFICATION QUIZ (STEP 2 OF 2) */}
+          <div className="p-5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-deep-ocean dark:text-slate-100">
+                2. ATTENTION VERIFICATION QUIZ
+              </span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                STEP 2 OF 2
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {isInstagram 
+                ? 'Followers must answer this question to verify they actually opened your Instagram and engaged.'
+                : isShortsVideo 
+                ? 'Shorts viewers must answer a quick detail from this vertical short to prove active attention.' 
+                : 'Viewers must answer this question after watching your full video to prove authentic human attention.'}
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Question <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder={
+                  isInstagram 
+                    ? 'e.g. What is our Instagram bio tagline or reel hook?'
+                    : isShortsVideo 
+                    ? 'e.g. What item was revealed at the end of the Short?'
+                    : 'e.g. What color car did we steal at minute 2?'
+                }
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 rounded-lg text-deep-ocean dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                Answer Options (Select the correct radio button)
+              </label>
+              <div className="space-y-2">
+                {options.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2.5">
+                    <input
+                      type="radio"
+                      name="correctAnswer"
+                      checked={correctAnswerIndex === idx}
+                      onChange={() => setCorrectAnswerIndex(idx)}
+                      className="w-4 h-4 text-deep-ocean dark:text-slate-400 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) => handleOptionChange(idx, e.target.value)}
+                      placeholder={`Option ${idx + 1}${correctAnswerIndex === idx ? ' (Correct Answer)' : ''}`}
+                      className={`flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-[#0E1620] border rounded-lg text-deep-ocean dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-colors ${
+                        correctAnswerIndex === idx 
+                          ? 'border-emerald-500 dark:border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20' 
+                          : 'border-slate-200 dark:border-slate-700'
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column: Guidelines & Preview (4 cols) */}
+        <div className="lg:col-span-4 space-y-5">
+          
+          {/* Anti-Cheat Guidelines Card */}
+          <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3 font-sans">
+            <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs font-bold text-deep-ocean dark:text-slate-100 uppercase font-mono">
+                {isInstagram ? 'Instagram Guidelines' : isShortsVideo ? 'Shorts Guidelines' : 'Anti-Cheat Guidelines'}
+              </h3>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {isInstagram ? (
+                <>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Real Followers &amp; Likes:</strong> Viewers directly open your Instagram profile to follow and like.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">15s-30s Quick Verification:</strong> Viewers spend active time before answering the attention quiz.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Zero Bots:</strong> Powered by cryptographic nonce validation to protect your balance.
+                    </p>
+                  </div>
+                </>
+              ) : isShortsVideo ? (
+                <>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Viral Retention:</strong> 15s to 60s watch ensures high retention for the YouTube Shorts algorithm.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Climax MCQ Question:</strong> Ask a question about the punchline or ending of the Short.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Anti-Skip Nonce:</strong> Players cannot fast-forward through the vertical short.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">60s Watch Duration:</strong> Best for YouTube view-through verification.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Specific MCQ questions:</strong> Ask about a detail occurring in the second half of the video.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
+                    <p>
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Reward calibration:</strong> Standard tasks give 1 BUG per authentic watch.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Live Feed Card Preview */}
+          <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-mono font-bold uppercase text-deep-ocean dark:text-slate-100">
+                Live Feed Preview
+              </span>
+              <span className="text-[10px] font-mono text-emerald-700 dark:text-[#C7DFA3] bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
+                Real-time
+              </span>
+            </div>
+
+            {/* Simulated Card */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0E1620] overflow-hidden shadow-subtle">
+              <div className={`relative ${isInstagram || isShortsVideo ? 'aspect-[9/16] max-h-72 mx-auto' : 'aspect-video'} w-full bg-slate-900 overflow-hidden`}>
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+                    <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
+                    <span>Thumbnail Preview</span>
+                  </div>
+                )}
+
+                <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[#C7DFA3] border border-white/20 text-[10px] font-mono font-bold backdrop-blur-xs">
+                  +1 BUG
+                </span>
+
+                <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-slate-300">
+                  3 min (180s)
+                </span>
+              </div>
+
+              <div className="p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={user.avatar}
+                    alt={channelName}
+                    className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                  />
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                    {channelName || (isInstagram ? 'Your Instagram Handle' : 'Your Channel')}
+                  </span>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                </div>
+
+                <p className="text-xs font-bold text-deep-ocean dark:text-slate-100 line-clamp-2">
+                  {title || (isInstagram ? 'Instagram Reel Title Preview' : isShortsVideo ? 'Shorts Video Headline Preview' : 'Campaign Video Headline Preview')}
+                </p>
+
+                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-400">
+                    Goal: 0 / {targetSubscribers} {isInstagram ? 'Followers' : isShortsVideo ? 'Views' : 'Subs'}
+                  </span>
+                  <span className="text-emerald-600 dark:text-[#C7DFA3] font-bold">
+                    {isInstagram ? 'Follow & Earn' : isShortsVideo ? 'Watch Short' : 'Watch & Earn'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Launch Campaign Summary & Button */}
+          <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3 font-mono">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Deployment Cost:</span>
+              <span className="font-bold text-deep-ocean dark:text-white">{totalCost} BUGs (₹{totalCost})</span>
+            </div>
+
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Your Balance:</span>
+              <span className={`font-bold ${isBalanceSufficient ? 'text-emerald-600 dark:text-[#C7DFA3]' : 'text-rose-500'}`}>
+                {user.bugBalance} BUGs
+              </span>
+            </div>
+
+            {errorMsg && (
+              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2 text-rose-600 dark:text-rose-400 text-xs font-sans">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {isSuccess && (
+              <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-2 text-emerald-700 dark:text-[#C7DFA3] text-xs font-bold font-sans">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>Task deployed successfully! Redirecting...</span>
+              </div>
+            )}
+
+            {!isBalanceSufficient ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('wallet')}
+                className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider shadow-subtle transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              >
+                <Coins className="w-4 h-4" />
+                <span>Top-Up Liquid Vault (Need {totalCost - user.bugBalance} BUGs)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDeploy}
+                disabled={isSuccess}
+                className="w-full py-2.5 px-4 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark dark:hover:bg-slate-600 text-white font-semibold text-xs uppercase tracking-wider shadow-subtle transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>Launch Campaign ({totalCost} BUGs)</span>
+              </button>
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+};

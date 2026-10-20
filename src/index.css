@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-matcha-green: #c7dfa3;
+  --color-matcha-dark: #2a4711;
+  --color-emerald-accent: #c7dfa3;
+  --color-emerald-dark: #2a4711;
+  --color-deep-ocean: #31465a;
+  --color-deep-ocean-dark: #1e2c39;
+  --color-slate-grey: #314158;
+  --color-airy-blue: #89b9e6;
+  --color-airy-blue-dark: #183e66;
+}
+
+@layer base {
+  :root {
+    --color-deep-ocean: #31465a;
+    --color-deep-ocean-dark: #1e2c39;
+    --color-slate-grey: #314158;
+    --color-matcha-green: #c7dfa3;
+    --color-matcha-dark: #2a4711;
+    --color-emerald-accent: #c7dfa3;
+    --color-emerald-dark: #2a4711;
+    --color-airy-blue: #89b9e6;
+    --color-airy-blue-dark: #183e66;
+    
+    --bg-canvas: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f8fafc;
+    --border-subtle: #e2ebf0;
+    --border-default: #e2ebf0;
+  }
+
+  .dark {
+    --bg-canvas: #0b1118;
+    --bg-surface: #0e1620;
+    --bg-card: #131d28;
+    --bg-input: #16222f;
+    --border-subtle: #1e2c39;
+    --border-default: #1e2c39;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #1e2c39;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  html.dark body {
+    background-color: #0b1118;
+    color: #f8fafc;
+  }
+}
+
+/* Custom Text Selection styled directly after submeadmindashboard.vercel.app */
+::selection {
+  background-color: #31465a;
+  color: #c7dfa3;
+}
+
+::-moz-selection {
+  background-color: #31465a;
+  color: #c7dfa3;
+}
+
+/* Custom Scrollbar matching SubMe Admin */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(49, 70, 90, 0.15);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(49, 70, 90, 0.28);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+/* Shadows strictly matching submeadmindashboard.vercel.app */
+.shadow-subtle {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.shadow-card {
+  box-shadow: 0 1px 3px rgba(49, 70, 90, 0.04), 0 1px 2px -1px rgba(49, 70, 90, 0.03);
+}
+
+.dark .shadow-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.19);
+}
+
+.shadow-elevated {
+  box-shadow: 0 4px 14px -2px rgba(49, 70, 90, 0.07), 0 1px 3px rgba(49, 70, 90, 0.03);
+}
+
+.dark .shadow-elevated {
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.shadow-dropdown {
+  box-shadow: 0 10px 25px -5px rgba(49, 70, 90, 0.12), 0 8px 10px -6px rgba(49, 70, 90, 0.08);
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.font-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Mobile viewport safe-area and touch utilities */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
