@@ -49,7 +49,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'popular'>('latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const activeCampaigns = campaigns.filter(c => c.status !== 'completed');
+  const activeCampaigns = campaigns.filter(c => {
+    if (c.status === 'completed') return false;
+    if (user?.completedCampaignIds?.includes(c.id)) return false;
+    if (user?.subscribedChannelIds?.includes(c.channelId)) return false;
+    return true;
+  });
 
   const shortsCount = activeCampaigns.filter(c => c.isShort).length;
   const videosCount = activeCampaigns.filter(c => !c.isShort && c.platform !== 'instagram').length;
@@ -233,10 +238,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
       {filteredCampaigns.length === 0 ? (
         <div className="text-center py-14 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 p-8 space-y-3 shadow-card">
           <p className="text-sm font-semibold text-deep-ocean dark:text-slate-200">
-            No tasks match your current filters.
+            {campaigns.length > 0 && activeCampaigns.length === 0
+              ? 'All Available Tasks Completed!'
+              : 'No tasks match your current filters.'}
           </p>
           <p className="text-xs text-slate-400">
-            Try adjusting your search query or switching to 'All Tasks'.
+            {campaigns.length > 0 && activeCampaigns.length === 0
+              ? 'You have finished all active creator tasks (+5 BUGs per task credited). Completed tasks are removed from your feed. Check back soon for new campaigns or launch your own task!'
+              : 'Try adjusting your search query or switching to another category.'}
           </p>
           {searchQuery && (
             <button

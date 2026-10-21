@@ -185,7 +185,7 @@ export const App: React.FC = () => {
   }, [transactions, user?.id]);
 
   useEffect(() => {
-    localStorage.setItem('subme_campaigns_v10', JSON.stringify(campaigns));
+    localStorage.setItem('subme_campaigns_v11', JSON.stringify(campaigns));
   }, [campaigns]);
 
   useEffect(() => {
@@ -432,19 +432,32 @@ export const App: React.FC = () => {
     });
   };
 
-  const handleVerificationSuccess = (camp: Campaign, reward: number, hash: string) => {
+  const handleVerificationSuccess = (camp: Campaign, _reward: number, hash: string) => {
     if (!user) return;
     const now = Date.now();
     const timeFormatted = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fixedReward = 5; // Every task completion awards strictly 5 BUGs (₹5 INR)
 
-    updateUserRecord(prev => ({
-      ...prev,
-      bugBalance: prev.bugBalance + reward,
-      completedTasksCount: prev.completedTasksCount + 1,
-      subscribedChannelIds: prev.subscribedChannelIds.includes(camp.channelId)
-        ? prev.subscribedChannelIds
-        : [...prev.subscribedChannelIds, camp.channelId],
-    }));
+    updateUserRecord(prev => {
+      const prevCompleted = prev.completedCampaignIds || [];
+      const completedCampaignIds = prevCompleted.includes(camp.id)
+        ? prevCompleted
+        : [...prevCompleted, camp.id];
+
+      try {
+        localStorage.setItem(`yt_completed_${prev.id}`, JSON.stringify(completedCampaignIds));
+      } catch (e) {}
+
+      return {
+        ...prev,
+        bugBalance: prev.bugBalance + fixedReward,
+        completedTasksCount: prev.completedTasksCount + 1,
+        completedCampaignIds,
+        subscribedChannelIds: prev.subscribedChannelIds.includes(camp.channelId)
+          ? prev.subscribedChannelIds
+          : [...prev.subscribedChannelIds, camp.channelId],
+      };
+    });
 
     setCampaigns(prev => prev.map(c => {
       if (c.id === camp.id) {
@@ -471,7 +484,7 @@ export const App: React.FC = () => {
       id: `tx_${now}`,
       type: 'EARNED_TASK',
       category: 'reward',
-      amount: reward,
+      amount: fixedReward,
       timestamp: now,
       timeStr: timeFormatted,
       userId: user.handle.replace('@', ''),
@@ -486,7 +499,7 @@ export const App: React.FC = () => {
       id: `comp_${now}`,
       campaignId: camp.id,
       viewerId: user.id,
-      rewardBugs: reward,
+      rewardBugs: fixedReward,
       sha256Hash: hash,
     }).catch(() => {});
     updateCampaignProgressInDb(

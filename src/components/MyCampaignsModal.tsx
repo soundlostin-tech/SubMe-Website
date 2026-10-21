@@ -160,8 +160,6 @@ export const MyCampaignsModal: React.FC<MyCampaignsModalProps> = ({
                         <div className="min-w-0">
                           <h4 className="font-bold text-sm text-white truncate max-w-md">{camp.title}</h4>
                           <div className="flex items-center gap-2 mt-1 text-xs font-code text-slate-400">
-                            <span>{camp.category}</span>
-                            <span>•</span>
                             <span className="text-matcha-green font-bold">{camp.rewardBugs} BUGs reward</span>
                             {camp.isVip && (
                               <span className="px-1.5 py-0.2 rounded bg-[#31465A] text-white border border-slate-600 text-[9px] font-bold uppercase">

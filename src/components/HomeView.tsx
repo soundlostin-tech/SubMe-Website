@@ -50,13 +50,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const currentFeatured = FEATURED_CREATORS[activeBannerIndex];
 
   const handleOpenFeaturedCampaign = (creator: FeaturedCreatorBanner) => {
-    const matchedCamp = campaigns.find(
+    const matchedCamp = filteredCampaigns.find(
       (c) => c.id === creator.campaignId || c.channelName.toLowerCase().includes(creator.name.toLowerCase())
     );
     if (matchedCamp) {
       onSelectCampaign(matchedCamp);
-    } else if (campaigns.length > 0) {
-      onSelectCampaign(campaigns[0]);
+    } else if (filteredCampaigns.length > 0) {
+      onSelectCampaign(filteredCampaigns[0]);
     }
   };
 
@@ -69,6 +69,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   ];
 
   const filteredCampaigns = campaigns.filter((c) => {
+    if (c.status === 'completed') return false;
+    if (user?.completedCampaignIds?.includes(c.id)) return false;
+    if (user?.subscribedChannelIds?.includes(c.channelId)) return false;
     if (selectedCategory === 'all') return true;
     const cat = c.category.toLowerCase();
     if (selectedCategory === 'gaming') return cat.includes('gaming');
@@ -77,6 +80,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
     if (selectedCategory === 'vlogs') return cat.includes('vlog') || cat.includes('guide');
     return true;
   });
+
+  const availableShorts = FEATURED_SHORTS.filter(
+    (short) => !user?.completedCampaignIds?.includes(short.id) && !user?.subscribedChannelIds?.includes(short.channelId)
+  );
 
   return (
     <div className="px-4 sm:px-6 md:px-8 py-5 sm:py-6 space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-deep-ocean dark:text-slate-100 min-h-full transition-colors max-w-7xl mx-auto">
@@ -282,11 +289,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                             {camp.title}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
                           <span>{camp.channelName}</span>
                           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          <span>&bull;</span>
-                          <span>{camp.category}</span>
                         </div>
                       </div>
                     </div>
