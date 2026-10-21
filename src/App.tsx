@@ -87,7 +87,19 @@ export const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.id) return parsed;
+        if (parsed && parsed.id) {
+          const completedFromStorage = localStorage.getItem(`yt_completed_${parsed.id}`);
+          if (completedFromStorage) {
+            try {
+              const ids = JSON.parse(completedFromStorage);
+              parsed.completedCampaignIds = Array.from(new Set([
+                ...(parsed.completedCampaignIds || []),
+                ...ids
+              ]));
+            } catch (e) {}
+          }
+          return parsed;
+        }
       } catch (e) {
         /* fallback */
       }
@@ -96,8 +108,24 @@ export const App: React.FC = () => {
   });
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    const saved = localStorage.getItem('subme_campaigns_v9');
-    return saved ? JSON.parse(saved) : INITIAL_CAMPAIGNS;
+    const saved = localStorage.getItem('subme_campaigns_v11');
+    if (saved) {
+      try {
+        const parsed: Campaign[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(c => ({
+            ...c,
+            rewardBugs: 5,
+            watchDurationSec: 180,
+          }));
+        }
+      } catch (e) {}
+    }
+    return INITIAL_CAMPAIGNS.map(c => ({
+      ...c,
+      rewardBugs: 5,
+      watchDurationSec: 180,
+    }));
   });
 
   const [transactions, setTransactions] = useState<WalletTransaction[]>(() => {
@@ -157,7 +185,7 @@ export const App: React.FC = () => {
   }, [transactions, user?.id]);
 
   useEffect(() => {
-    localStorage.setItem('subme_campaigns_v9', JSON.stringify(campaigns));
+    localStorage.setItem('subme_campaigns_v10', JSON.stringify(campaigns));
   }, [campaigns]);
 
   useEffect(() => {
@@ -322,10 +350,26 @@ export const App: React.FC = () => {
   };
 
   const handleLogin = (selectedUser: UserProfile) => {
-    setUser(selectedUser);
-    sessionStorage.setItem('subme_auth_session', JSON.stringify(selectedUser));
-    upsertProfileToDb(selectedUser).catch(() => {});
-    const savedTx = localStorage.getItem(`subme_tx_v8_${selectedUser.id}`);
+    let completedCampaignIds = selectedUser.completedCampaignIds || [];
+    try {
+      const savedCompleted = localStorage.getItem(`yt_completed_${selectedUser.id}`);
+      if (savedCompleted) {
+        const ids = JSON.parse(savedCompleted);
+        if (Array.isArray(ids)) {
+          completedCampaignIds = Array.from(new Set([...completedCampaignIds, ...ids]));
+        }
+      }
+    } catch (e) {}
+
+    const mergedUser: UserProfile = {
+      ...selectedUser,
+      completedCampaignIds,
+    };
+
+    setUser(mergedUser);
+    sessionStorage.setItem('subme_auth_session', JSON.stringify(mergedUser));
+    upsertProfileToDb(mergedUser).catch(() => {});
+    const savedTx = localStorage.getItem(`subme_tx_v8_${mergedUser.id}`);
     if (savedTx) {
       try {
         setTransactions(JSON.parse(savedTx));
@@ -336,7 +380,7 @@ export const App: React.FC = () => {
       setTransactions([]);
     }
     // If admin logged in, set default tab to overview
-    if (selectedUser.role === 'admin') {
+    if (mergedUser.role === 'admin') {
       setActiveTab('overview');
     } else {
       setActiveTab('home');
@@ -344,12 +388,16 @@ export const App: React.FC = () => {
   };
 
   const handleRegister = (newUser: UserProfile) => {
-    setAccounts(prev => [newUser, ...prev]);
-    setUser(newUser);
-    sessionStorage.setItem('subme_auth_session', JSON.stringify(newUser));
-    upsertProfileToDb(newUser).catch(() => {});
+    const userWithCompleted: UserProfile = {
+      ...newUser,
+      completedCampaignIds: newUser.completedCampaignIds || [],
+    };
+    setAccounts(prev => [userWithCompleted, ...prev]);
+    setUser(userWithCompleted);
+    sessionStorage.setItem('subme_auth_session', JSON.stringify(userWithCompleted));
+    upsertProfileToDb(userWithCompleted).catch(() => {});
     setTransactions([]);
-    localStorage.setItem(`subme_tx_v8_${newUser.id}`, JSON.stringify([]));
+    localStorage.setItem(`subme_tx_v8_${userWithCompleted.id}`, JSON.stringify([]));
     setActiveTab('home');
   };
 

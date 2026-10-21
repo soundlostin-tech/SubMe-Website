@@ -46,7 +46,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'shorts' | 'videos' | 'reels'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'default' | 'reward_desc' | 'duration_asc'>('default');
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'popular'>('latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const activeCampaigns = campaigns.filter(c => c.status !== 'completed');
@@ -72,10 +72,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
       );
     }
 
-    if (sortBy === 'reward_desc') {
-      result.sort((a, b) => b.rewardBugs - a.rewardBugs);
-    } else if (sortBy === 'duration_asc') {
-      result.sort((a, b) => (a.watchDurationSec || 180) - (b.watchDurationSec || 180));
+    if (sortBy === 'latest') {
+      result.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } else if (sortBy === 'oldest') {
+      result.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    } else if (sortBy === 'popular') {
+      result.sort((a, b) => {
+        const popB = (b.viewsCount || 0) > 0 ? (b.viewsCount || 0) : (b.currentProgress || 0);
+        const popA = (a.viewsCount || 0) > 0 ? (a.viewsCount || 0) : (a.currentProgress || 0);
+        if (popB !== popA) return popB - popA;
+        return (b.currentProgress || 0) - (a.currentProgress || 0);
+      });
     }
 
     return result;
@@ -186,9 +193,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
             onChange={(e) => setSortBy(e.target.value as any)}
             className="text-xs font-mono bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
           >
-            <option value="default">Default Sort</option>
-            <option value="reward_desc">Highest Reward</option>
-            <option value="duration_asc">Shortest Time</option>
+            <option value="latest">Latest Tasks</option>
+            <option value="oldest">Oldest Tasks</option>
+            <option value="popular">Popular Tasks</option>
           </select>
 
           {/* View Mode Toggle */}
