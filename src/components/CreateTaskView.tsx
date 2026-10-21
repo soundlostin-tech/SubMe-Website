@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   ShieldCheck, 
@@ -10,8 +10,7 @@ import {
   Tv, 
   Image as ImageIcon,
   Sparkles,
-  Upload,
-  Trash2
+  Play
 } from 'lucide-react';
 import { Campaign, UserProfile } from '../types';
 import { playSuccessFanfare } from '../utils/audio';
@@ -57,7 +56,6 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
   const [title, setTitle] = useState<string>('');
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
   const [channelName, setChannelName] = useState<string>(user.name || '');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Computed platform helpers
   const isLongVideo = platform === 'youtube' && !isShort;
@@ -67,8 +65,8 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
   // Targets & Budget
   const [targetSubscribers, setTargetSubscribers] = useState<number>(50);
   const watchDurationSec = 180; // Fixed 3 Minutes (180s) across all content types
-  const [rewardBugs, setRewardBugs] = useState<number>(1);
-  const totalCost = targetSubscribers * 1.0;
+  const rewardBugs = 5; // Fixed 5 BUGs reward per task completion
+  const totalCost = targetSubscribers * 5.0;
   const isBalanceSufficient = user.bugBalance >= totalCost;
   
   // Verification quiz
@@ -86,90 +84,35 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
     return match && match[2].length === 11 ? match[2] : '';
   };
 
+  const extractInstagramCode = (url: string): string => {
+    if (!url) return '';
+    const match = url.match(/(?:reel|reels|p)\/([A-Za-z0-9_-]+)/i);
+    return match ? match[1] : '';
+  };
+
   const detectedYtId = platform === 'youtube' ? extractYouTubeId(videoUrl) : '';
+  const detectedInstaCode = platform === 'instagram' ? extractInstagramCode(videoUrl) : '';
 
   useEffect(() => {
-    if (detectedYtId && (!thumbnailUrl || thumbnailUrl.includes('img.youtube.com'))) {
+    if (platform === 'youtube' && detectedYtId) {
       setThumbnailUrl(`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`);
+    } else if (platform === 'instagram' && detectedInstaCode) {
+      setThumbnailUrl(`https://www.instagram.com/p/${detectedInstaCode}/media/?size=l`);
+    } else {
+      setThumbnailUrl('');
     }
-  }, [detectedYtId]);
+  }, [platform, detectedYtId, detectedInstaCode]);
 
   const handleTypeChange = (p: 'youtube' | 'instagram', shortFlag: boolean = false) => {
     setPlatform(p);
     setIsShort(shortFlag);
     setErrorMsg(null);
-
-    if (p === 'instagram') {
-      if (thumbnailUrl.includes('img.youtube.com')) {
-        setThumbnailUrl('');
-      }
-    }
   };
 
   const handleOptionChange = (idx: number, val: string) => {
     const updated = [...options];
     updated[idx] = val;
     setOptions(updated);
-  };
-
-  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('Please upload an image file (PNG, JPG, WEBP).');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('Image size must be less than 5MB.');
-      return;
-    }
-
-    setErrorMsg(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setThumbnailUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDropThumbnail = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('Please upload an image file (PNG, JPG, WEBP).');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('Image size must be less than 5MB.');
-      return;
-    }
-
-    setErrorMsg(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setThumbnailUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleClearThumbnail = () => {
-    if (detectedYtId) {
-      setThumbnailUrl(`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`);
-    } else {
-      setThumbnailUrl('');
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handleDeploy = () => {
@@ -207,9 +150,11 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
     }
 
     const finalYtId = detectedYtId || (platform === 'youtube' ? 'dQw4w9WgXcQ' : '');
-    const fallbackThumbnail = isInstagram
-      ? (thumbnailUrl.trim() || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&auto=format&fit=crop&q=80')
-      : (thumbnailUrl.trim() || (finalYtId ? `https://img.youtube.com/vi/${finalYtId}/hqdefault.jpg` : ''));
+    const autoDetectedThumbnail = platform === 'youtube' && detectedYtId
+      ? `https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`
+      : platform === 'instagram' && detectedInstaCode
+      ? `https://www.instagram.com/p/${detectedInstaCode}/media/?size=l`
+      : (thumbnailUrl || (finalYtId ? `https://img.youtube.com/vi/${finalYtId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&auto=format&fit=crop&q=80'));
 
     const taskDescription = isInstagram
       ? `Instagram ${instaActionType === 'follow_only' ? 'Follow' : instaActionType === 'like_reel' ? 'Like' : 'Follow & Like'} task deployed by ${user.name}. Open Instagram, engage authentically, and complete verification.`
@@ -230,7 +175,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
       targetSubscribers,
       rewardBugs,
       watchDurationSec,
-      thumbnailUrl: fallbackThumbnail,
+      thumbnailUrl: autoDetectedThumbnail,
       platform,
       isShort,
       question: question.trim(),
@@ -406,93 +351,65 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
               </div>
             </div>
 
-            {/* Universal Thumbnail Upload (No URLs) */}
+            {/* Automatic Video Thumbnail & Frame Detection (No upload needed) */}
             <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Thumbnail / Cover Image</span>
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Automatic Video Thumbnail &amp; Preview Frame</span>
                 </label>
-                <span className="text-[10px] font-mono text-slate-400">
-                  Image Upload Only (No URL Needed)
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-[#C7DFA3] bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40 font-bold">
+                  Auto From Video
                 </span>
               </div>
 
-              {/* Hidden File Input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                onChange={handleThumbnailUpload}
-                className="hidden"
-              />
-
-              {thumbnailUrl ? (
-                <div className="p-3.5 bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-4">
-                  <div className={`relative ${isInstagram || isShortsVideo ? 'w-24 aspect-[9/16]' : 'w-44 aspect-video'} bg-black overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 shadow-2xs`}>
-                    <img
-                      src={thumbnailUrl}
-                      alt="Thumbnail Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/80 text-[8.5px] font-mono text-emerald-400">
-                      {thumbnailUrl.startsWith('data:image') ? 'Uploaded File' : 'Auto-detected'}
-                    </div>
+              {(detectedYtId || detectedInstaCode) ? (
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-800 flex items-center gap-3.5">
+                  <div className={`relative ${isInstagram || isShortsVideo ? 'w-16 aspect-[9/16]' : 'w-28 aspect-video'} bg-black rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-subtle`}>
+                    {platform === 'youtube' ? (
+                      <img
+                        src={`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`}
+                        alt="YouTube Video Thumbnail"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${detectedYtId}/0.jpg`;
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src={`https://www.instagram.com/p/${detectedInstaCode}/media/?size=l`}
+                        alt="Instagram Reel Cover"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-emerald-400">
+                      AUTO
+                    </span>
                   </div>
 
-                  <div className="flex-1 space-y-1 text-center sm:text-left">
-                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {thumbnailUrl.startsWith('data:image') ? 'Custom Uploaded Thumbnail' : 'YouTube Detected Thumbnail'}
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 truncate">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{platform === 'youtube' ? 'YouTube Video Thumbnail Detected' : 'Instagram Reel Video Detected'}</span>
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      This image will be displayed on the Home feed and Tasks list.
+                      {platform === 'youtube' 
+                        ? `Video ID: ${detectedYtId} • Official high-res thumbnail auto-extracted from YouTube.` 
+                        : `Reel Code: ${detectedInstaCode} • Reel cover and video frame automatically attached.`}
                     </p>
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1.5">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-1.5 bg-[#1E2C39] dark:bg-slate-700 hover:bg-[#16222F] text-white text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <Upload className="w-3 h-3 text-emerald-400" />
-                        <span>Upload Custom Image</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleClearThumbnail}
-                        className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-rose-500 text-xs font-mono flex items-center gap-1 cursor-pointer"
-                        title="Remove custom thumbnail"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Reset</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDropThumbnail}
-                  className="p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/70 dark:hover:border-emerald-500/70 bg-slate-50/50 dark:bg-[#0E1620]/50 hover:bg-slate-50 dark:hover:bg-[#0E1620] transition-all cursor-pointer text-center space-y-2 group"
-                >
-                  <div className="w-10 h-10 mx-auto bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                      Click to upload thumbnail image or drag &amp; drop
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-400">
-                      Supports PNG, JPG, JPEG, WEBP up to 5MB (No image URLs required)
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {detectedYtId && !thumbnailUrl.startsWith('data:image') && (
-                <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-mono text-emerald-700 dark:text-[#C7DFA3] flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 shrink-0" />
-                  <span>YouTube ID detected: {detectedYtId} (You can keep this or upload a custom image above)</span>
+                <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#0E1620]/50 border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Paste your {platform === 'instagram' ? 'Instagram Reel' : isShortsVideo ? 'YouTube Short' : 'YouTube Video'} link above to auto-capture the official thumbnail and video frame.
+                  </p>
+                  <p className="text-[10px] font-mono text-slate-400">
+                    No manual thumbnail upload needed — platform captures it automatically from your video.
+                  </p>
                 </div>
               )}
             </div>
@@ -663,21 +580,38 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
             {/* Simulated Card */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0E1620] overflow-hidden shadow-subtle">
               <div className={`relative ${isInstagram || isShortsVideo ? 'aspect-[9/16] max-h-72 mx-auto' : 'aspect-video'} w-full bg-slate-900 overflow-hidden`}>
-                {thumbnailUrl ? (
+                {platform === 'youtube' && detectedYtId ? (
+                  <img
+                    src={`https://img.youtube.com/vi/${detectedYtId}/hqdefault.jpg`}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${detectedYtId}/0.jpg`;
+                    }}
+                  />
+                ) : platform === 'instagram' && detectedInstaCode ? (
+                  <iframe
+                    src={`https://www.instagram.com/reel/${detectedInstaCode}/embed/`}
+                    title="Instagram Reel Preview"
+                    className="w-full h-full border-0 pointer-events-none scale-105"
+                    scrolling="no"
+                  />
+                ) : thumbnailUrl ? (
                   <img
                     src={thumbnailUrl}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs">
-                    <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
-                    <span>Thumbnail Preview</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-xs p-4 text-center">
+                    <Play className="w-6 h-6 mb-1 opacity-50 text-slate-400" />
+                    <span className="font-semibold text-slate-400">Video Frame Preview</span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">Enter video URL to display thumbnail &amp; video frame</span>
                   </div>
                 )}
 
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[#C7DFA3] border border-white/20 text-[10px] font-mono font-bold backdrop-blur-xs">
-                  +1 BUG
+                  +5 BUGs
                 </span>
 
                 <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-slate-300">

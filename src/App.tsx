@@ -931,6 +931,7 @@ export const App: React.FC = () => {
               user={user}
               onSelectCampaign={handleSelectCampaign}
               onTriggerVerification={handleTriggerVerification}
+              onVerificationSuccess={handleVerificationSuccess}
               onBackToFeed={handleBackToFeed}
               hasSubscribed={user.subscribedChannelIds.includes(selectedCampaign.channelId)}
             />

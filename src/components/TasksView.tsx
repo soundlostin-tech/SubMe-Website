@@ -256,9 +256,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 {/* Thumbnail Container */}
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
                   <img
-                    src={camp.thumbnailUrl || `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg`}
+                    src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
                     alt={camp.title}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                    onError={(e) => {
+                      if (camp.youtubeId) {
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+                      }
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
 
@@ -379,9 +384,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={camp.thumbnailUrl || `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg`}
+                          src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
                           alt={camp.title}
                           className="w-14 h-9 rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                          onError={(e) => {
+                            if (camp.youtubeId) {
+                              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+                            }
+                          }}
                         />
                         <div className="min-w-0">
                           <p className="font-bold text-deep-ocean dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-matcha-green truncate max-w-xs md:max-w-sm">

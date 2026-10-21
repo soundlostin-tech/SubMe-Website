@@ -72,6 +72,7 @@ export interface UserProfile {
   activeCampaignsCount: number;
   reputationScore: number;
   subscribedChannelIds: string[];
+  completedCampaignIds?: string[];
 }
 
 export interface VerificationSession {
