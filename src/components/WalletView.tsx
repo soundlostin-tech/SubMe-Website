@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   Coins, 
@@ -19,7 +19,13 @@ import {
   UserCheck,
   XCircle,
   PlusCircle,
-  User
+  User,
+  UploadCloud,
+  Image as ImageIcon,
+  Eye,
+  Trash2,
+  FileCheck,
+  X
 } from 'lucide-react';
 import { UserProfile, WalletTransaction, PayoutClaim, DepositRequest } from '../types';
 import { playCoinSound, playSuccessFanfare } from '../utils/audio';
@@ -30,7 +36,7 @@ interface WalletViewProps {
   transactions: WalletTransaction[];
   payoutClaims: PayoutClaim[];
   depositRequests: DepositRequest[];
-  onRequestDeposit: (amount: number, utr: string) => void;
+  onRequestDeposit: (amount: number, utr: string, screenshotUrl?: string) => void;
   onApproveDeposit: (depositId: string) => void;
   onRejectDeposit: (depositId: string, reason?: string) => void;
   onDirectCreditUser?: (targetUserId: string, amount: number, note: string) => void;
@@ -80,6 +86,15 @@ export const WalletView: React.FC<WalletViewProps> = ({
   // Admin filter for deposit requests tab
   const [depositFilter, setDepositFilter] = useState<'pending' | 'all' | 'approved' | 'rejected'>('pending');
 
+  // Mandatory Payment Screenshot State for Wallet View Deposit Form
+  const [walletScreenshotUrl, setWalletScreenshotUrl] = useState<string | null>(null);
+  const [walletScreenshotName, setWalletScreenshotName] = useState<string | null>(null);
+  const walletFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Admin Screenshot Lightbox / Verification Modal State
+  const [inspectingDeposit, setInspectingDeposit] = useState<DepositRequest | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; utr?: string } | null>(null);
+
   const presetAmounts = [50, 100, 250, 500, 1000];
 
   const handleCopyVpa = () => {
@@ -92,6 +107,38 @@ export const WalletView: React.FC<WalletViewProps> = ({
     const randomUtr = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     setUtrNumber(randomUtr);
     setUtrError(null);
+  };
+
+  const handleWalletFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUtrError('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setUtrError('Screenshot file size exceeds 8MB limit.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setWalletScreenshotUrl(base64);
+      setWalletScreenshotName(file.name);
+      setUtrError(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveWalletScreenshot = () => {
+    setWalletScreenshotUrl(null);
+    setWalletScreenshotName(null);
+    if (walletFileInputRef.current) {
+      walletFileInputRef.current.value = '';
+    }
   };
 
   const handleSubmitDeposit = (e: React.FormEvent) => {
@@ -108,15 +155,26 @@ export const WalletView: React.FC<WalletViewProps> = ({
       return;
     }
 
+    // MANDATORY Screenshot validation
+    if (!walletScreenshotUrl) {
+      setUtrError('Payment screenshot is strictly MANDATORY. Please upload your transaction receipt/screenshot to proceed.');
+      return;
+    }
+
     setUtrError(null);
     setIsSubmittingUtr(true);
 
     setTimeout(() => {
       setIsSubmittingUtr(false);
-      onRequestDeposit(amount, cleanUtr);
+      onRequestDeposit(amount, cleanUtr, walletScreenshotUrl);
       playSuccessFanfare();
-      setUtrSuccessMsg(`Deposit request for ₹${amount} (UTR: ${cleanUtr}) submitted! Admin will verify the bank payment and credit your BUGs.`);
+      setUtrSuccessMsg(`Deposit request for ₹${amount} (UTR: ${cleanUtr}) submitted with proof! Admin will verify the screenshot and credit your BUGs.`);
       setUtrNumber('');
+      setWalletScreenshotUrl(null);
+      setWalletScreenshotName(null);
+      if (walletFileInputRef.current) {
+        walletFileInputRef.current.value = '';
+      }
       setTimeout(() => setUtrSuccessMsg(null), 8000);
     }, 800);
   };
@@ -141,7 +199,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
       return;
     }
     if (isNaN(amt) || amt < 50) {
-      setWithdrawalMsg('Minimum withdrawal amount is ₹50.');
+      setWithdrawalMsg('Minimum withdrawal amount is ₹50 (50 BUGs). Payouts below ₹50 cannot be requested.');
       return;
     }
     if (amt > user.bugBalance) {
@@ -403,7 +461,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  NPCI 12-Digit UTR Reference Number
+                  NPCI 12-Digit UTR Reference Number <span className="text-rose-500">*</span>
                 </label>
                 <button
                   type="button"
@@ -424,6 +482,80 @@ export const WalletView: React.FC<WalletViewProps> = ({
               />
             </div>
 
+            {/* MANDATORY PAYMENT SCREENSHOT UPLOAD */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <UploadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-[#C7DFA3]" />
+                  <span>Payment Screenshot</span>
+                  <span className="px-1.5 py-0.2 text-[9px] bg-rose-500 text-white font-mono font-bold">
+                    MANDATORY
+                  </span>
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">PNG, JPG, WebP</span>
+              </div>
+
+              <input
+                ref={walletFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleWalletFileUpload}
+                className="hidden"
+                id="wallet-view-screenshot-upload"
+              />
+
+              {!walletScreenshotUrl ? (
+                <div
+                  onClick={() => walletFileInputRef.current?.click()}
+                  className="p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white dark:bg-[#0E1620] text-center cursor-pointer transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5 mx-auto text-slate-400" />
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                    Upload Payment Confirmation Screenshot
+                  </p>
+                  <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                    Required for Admin Verification &bull; Click to Browse
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-white dark:bg-[#0E1620] border border-emerald-500/50 flex items-center justify-between gap-2 shadow-2xs">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <img 
+                      src={walletScreenshotUrl} 
+                      alt="Receipt Preview" 
+                      className="w-10 h-10 object-cover border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                      onClick={() => setLightboxImage({ url: walletScreenshotUrl, title: 'My Uploaded Receipt', utr: utrNumber })}
+                    />
+                    <div className="overflow-hidden">
+                      <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-[#C7DFA3] block truncate">
+                        {walletScreenshotName || 'payment_receipt.png'}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">Proof attached</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setLightboxImage({ url: walletScreenshotUrl, title: 'My Uploaded Receipt', utr: utrNumber })}
+                      className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                      title="Inspect"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveWalletScreenshot}
+                      className="p-1 text-rose-500 hover:text-rose-700"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Error or Success */}
             {utrError && (
               <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2 text-rose-600 dark:text-rose-400 text-xs font-mono">
@@ -442,9 +574,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
             {/* Submit Verification Button */}
             <button
               type="submit"
-              disabled={isSubmittingUtr || utrNumber.length !== 12}
+              disabled={isSubmittingUtr || utrNumber.length !== 12 || !walletScreenshotUrl}
               className={`w-full py-2.5 px-4 font-mono text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-2xs ${
-                !isSubmittingUtr && utrNumber.length === 12
+                !isSubmittingUtr && utrNumber.length === 12 && walletScreenshotUrl
                   ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold active:scale-98'
                   : 'bg-slate-100 dark:bg-[#16222F] text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-800'
               }`}
@@ -457,7 +589,13 @@ export const WalletView: React.FC<WalletViewProps> = ({
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Submit Payment for Admin Verification</span>
+                  <span>
+                    {!walletScreenshotUrl 
+                      ? 'Upload Screenshot to Proceed' 
+                      : utrNumber.length !== 12 
+                      ? 'Enter 12-Digit UTR' 
+                      : 'Submit Payment for Admin Verification'}
+                  </span>
                 </>
               )}
             </button>
@@ -530,6 +668,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   </button>
                 </div>
 
+                <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  Minimum payout: ₹50.00 (50 BUGs). Withdrawals below ₹50 cannot be requested.
+                </p>
+
                 {withdrawalMsg && (
                   <p className="text-[11px] font-mono text-emerald-600 dark:text-[#C7DFA3] pt-0.5">
                     {withdrawalMsg}
@@ -565,6 +707,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   <th className="py-2.5 px-3">Request ID</th>
                   <th className="py-2.5 px-3">Amount</th>
                   <th className="py-2.5 px-3">NPCI 12-Digit UTR</th>
+                  <th className="py-2.5 px-3">Payment Proof</th>
                   <th className="py-2.5 px-3">Submitted At</th>
                   <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-3 text-right">Remarks</th>
@@ -588,6 +731,23 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           {copiedUtrId === dep.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                         </button>
                       </div>
+                    </td>
+                    <td className="py-3 px-3">
+                      {dep.screenshotUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setLightboxImage({ url: dep.screenshotUrl!, title: `My Payment Proof (₹${dep.amount})`, utr: dep.utr })}
+                          className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition-colors cursor-pointer"
+                          title="Click to view full screenshot"
+                        >
+                          <img src={dep.screenshotUrl} alt="Receipt thumbnail" className="w-7 h-7 object-cover" />
+                          <span className="text-[10px] text-slate-600 dark:text-slate-300 flex items-center gap-0.5">
+                            <Eye className="w-3 h-3 text-emerald-500" /> Proof
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-mono">None</span>
+                      )}
                     </td>
                     <td className="py-3 px-3 text-slate-500">{dep.requestedAt}</td>
                     <td className="py-3 px-3">
@@ -679,6 +839,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     <th className="py-2.5 px-3">User / Creator</th>
                     <th className="py-2.5 px-3">Amount (₹)</th>
                     <th className="py-2.5 px-3">NPCI 12-Digit UTR</th>
+                    <th className="py-2.5 px-3">Payment Screenshot Proof</th>
                     <th className="py-2.5 px-3">Date &amp; Time</th>
                     <th className="py-2.5 px-3">Status</th>
                     <th className="py-2.5 px-3 text-right">Admin Action</th>
@@ -718,6 +879,33 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         </div>
                       </td>
 
+                      {/* Payment Screenshot Column */}
+                      <td className="py-3 px-3">
+                        {dep.screenshotUrl ? (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={dep.screenshotUrl}
+                              alt="Payment Screenshot"
+                              onClick={() => setInspectingDeposit(dep)}
+                              className="w-10 h-10 object-cover border border-slate-300 dark:border-slate-700 hover:border-emerald-500 cursor-pointer shadow-2xs hover:scale-105 transition-transform"
+                              title="Click to inspect payment screenshot"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setInspectingDeposit(dep)}
+                              className="px-2 py-1 text-[10px] font-mono font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[#16222F] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Eye className="w-3 h-3 text-emerald-500" />
+                              <span>Inspect</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-rose-500 font-mono bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 border border-rose-200 dark:border-rose-900/40">
+                            No Screenshot
+                          </span>
+                        )}
+                      </td>
+
                       <td className="py-3 px-3 text-slate-500 text-[11px]">{dep.requestedAt}</td>
 
                       <td className="py-3 px-3">
@@ -735,6 +923,16 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       <td className="py-3 px-3 text-right">
                         {dep.status === 'pending' ? (
                           <div className="flex items-center justify-end gap-1.5">
+                            {dep.screenshotUrl && (
+                              <button
+                                onClick={() => setInspectingDeposit(dep)}
+                                className="px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#16222F] text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Inspect screenshot receipt details"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Inspect</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => onApproveDeposit(dep.id)}
                               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
@@ -1022,6 +1220,219 @@ export const WalletView: React.FC<WalletViewProps> = ({
         )}
 
       </div>
+
+      {/* Admin Deposit Verification & Screenshot Inspection Modal */}
+      {inspectingDeposit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-[#131D28] border border-slate-300 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#16222F]">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight font-mono">
+                    Payment Screenshot Verification Desk
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500">
+                    Verify user screenshot against your bank statement before crediting BUGs
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setInspectingDeposit(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: 2 Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-y-auto">
+              
+              {/* Left Column: Full Screenshot View (7 cols) */}
+              <div className="md:col-span-7 p-4 bg-slate-950 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-800 min-h-[300px] max-h-[60vh] overflow-auto">
+                {inspectingDeposit.screenshotUrl ? (
+                  <img
+                    src={inspectingDeposit.screenshotUrl}
+                    alt="Payment Receipt Screenshot"
+                    className="max-h-[55vh] w-auto object-contain rounded shadow-lg"
+                  />
+                ) : (
+                  <div className="p-8 text-center text-slate-400 font-mono text-xs">
+                    <AlertCircle className="w-8 h-8 mx-auto text-amber-500 mb-2" />
+                    <span>No screenshot attached to this deposit request.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Verification Metadata & Decision (5 cols) */}
+              <div className="md:col-span-5 p-5 space-y-4 bg-white dark:bg-[#131D28] flex flex-col justify-between">
+                
+                <div className="space-y-3 font-mono text-xs">
+                  
+                  {/* User Profile Info */}
+                  <div className="p-3 bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-800 space-y-1.5">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Applicant</span>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">
+                      {inspectingDeposit.userName}
+                    </div>
+                    <div className="text-slate-500 text-[11px]">
+                      {inspectingDeposit.userHandle}
+                    </div>
+                    {inspectingDeposit.userEmail && (
+                      <div className="text-slate-400 text-[11px]">
+                        {inspectingDeposit.userEmail}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Details */}
+                  <div className="space-y-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Requested Amount:</span>
+                      <span className="font-extrabold text-base text-emerald-600 dark:text-[#C7DFA3]">
+                        ₹{inspectingDeposit.amount} ({inspectingDeposit.amount} BUGs)
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-slate-500 block">Reported NPCI 12-Digit UTR:</span>
+                      <div className="flex items-center justify-between bg-slate-100 dark:bg-[#0E1620] px-2.5 py-1.5 border border-slate-200 dark:border-slate-800">
+                        <code className="font-bold text-slate-900 dark:text-white select-all">
+                          {inspectingDeposit.utr}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyUtr(inspectingDeposit.utr, inspectingDeposit.id)}
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                      <span className="text-slate-500">Submitted:</span>
+                      <span className="text-slate-700 dark:text-slate-300">{inspectingDeposit.requestedAt}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Status:</span>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase border ${
+                        inspectingDeposit.status === 'approved'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50'
+                          : inspectingDeposit.status === 'rejected'
+                          ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50'
+                          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50'
+                      }`}>
+                        {inspectingDeposit.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Verification Notice */}
+                  <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 space-y-1">
+                    <span className="font-bold block">Verification Checklist:</span>
+                    <ul className="list-disc list-inside space-y-0.5 text-[10.5px]">
+                      <li>Amount matches screenshot: ₹{inspectingDeposit.amount}</li>
+                      <li>UTR matches screenshot: {inspectingDeposit.utr}</li>
+                      <li>Transaction matches bank statement</li>
+                    </ul>
+                  </div>
+
+                </div>
+
+                {/* Actions */}
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                  {inspectingDeposit.status === 'pending' ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onApproveDeposit(inspectingDeposit.id);
+                          setInspectingDeposit(null);
+                        }}
+                        className="py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Approve &amp; Credit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onRejectDeposit(inspectingDeposit.id, 'Payment verification rejected by admin');
+                          setInspectingDeposit(null);
+                        }}
+                        className="py-2 px-3 border border-rose-300 dark:border-rose-900/60 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>Reject</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2 text-center text-xs font-mono text-slate-500 bg-slate-100 dark:bg-[#0E1620]">
+                      Deposit request already {inspectingDeposit.status}.
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectingDeposit(null)}
+                    className="w-full py-1.5 text-xs font-mono text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                  >
+                    Close Inspection
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Lightbox Modal */}
+      {lightboxImage && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative max-w-3xl w-full bg-[#131D28] border border-slate-700 p-4 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-emerald-400" />
+                <span>{lightboxImage.title}</span>
+              </span>
+              <button
+                onClick={() => setLightboxImage(null)}
+                className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto flex items-center justify-center bg-black/60 border border-slate-800 p-2">
+              <img 
+                src={lightboxImage.url} 
+                alt="Payment Screenshot Lightbox" 
+                className="max-h-[65vh] w-auto object-contain"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-1">
+              {lightboxImage.utr ? <span>UTR: <code className="text-white font-bold">{lightboxImage.utr}</code></span> : <span />}
+              <button
+                onClick={() => setLightboxImage(null)}
+                className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -6,10 +6,11 @@ import {
   Search,
   LayoutGrid,
   List,
-  Coins
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import { Campaign, UserProfile } from '../types';
-import { isPromotionalCampaign } from '../utils/campaignHelper';
+import { isPromotionalCampaign, isTaskExpired, getTaskTimeRemaining } from '../utils/campaignHelper';
 
 const YouTubeIcon: React.FC<{ className?: string }> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -38,6 +39,255 @@ interface TasksViewProps {
   user: UserProfile;
 }
 
+// 1. YouTube Long-Form Video Card (16:9 Standard YouTube Dimension & Layout)
+const YouTubeVideoCard: React.FC<{
+  camp: Campaign;
+  user: UserProfile;
+  onSelectCampaign: (c: Campaign) => void;
+}> = ({ camp, user, onSelectCampaign }) => {
+  // If task is a Short or Reel, render with 9:16 vertical ratio
+  if (camp.isShort || camp.platform === 'instagram') {
+    return <VerticalShortsCard camp={camp} user={user} onSelectCampaign={onSelectCampaign} />;
+  }
+
+  const progressPercent = Math.min(100, Math.round((camp.currentProgress / camp.targetSubscribers) * 100));
+  const isUserSubscribed = user?.subscribedChannelIds?.includes(camp.channelId);
+  const isCompleted = user?.completedCampaignIds?.includes(camp.id);
+
+  return (
+    <div
+      onClick={() => onSelectCampaign(camp)}
+      className="group rounded-xl bg-white dark:bg-[#131D28] border border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between active:scale-[0.99]"
+    >
+      {/* 16:9 Widescreen Video Thumbnail */}
+      <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
+        <img
+          src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
+          alt={camp.title}
+          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+          onError={(e) => {
+            if (camp.youtubeId) {
+              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+            }
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+        {/* Platform Badge */}
+        <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-rose-400 border border-rose-500/30 text-[10px] font-mono font-bold uppercase flex items-center gap-1 shadow-xs">
+          <YouTubeIcon className="w-2.5 h-2.5 text-rose-500" />
+          <span>YOUTUBE</span>
+        </span>
+
+        {/* VIP Pinned Badge */}
+        {camp.isVip && (
+          <span className="absolute top-2.5 left-24 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[9.5px] font-mono font-bold uppercase flex items-center gap-1 shadow-xs">
+            <Sparkles className="w-2.5 h-2.5" />
+            <span>VIP PINNED</span>
+          </span>
+        )}
+
+        {/* Reward Pill */}
+        {isPromotionalCampaign(camp) ? (
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-amber-500/90 text-white border border-amber-600 text-[10px] font-mono font-bold backdrop-blur-xs shadow-xs">
+            Tasks Not Available
+          </span>
+        ) : (
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-emerald-500/90 text-white text-[11px] font-mono font-bold backdrop-blur-xs shadow-xs flex items-center gap-1">
+            <span>+{camp.rewardBugs.toFixed(0)} BUGs</span>
+          </span>
+        )}
+
+        {/* 24-Hour Expiration Countdown */}
+        {getTaskTimeRemaining(camp) && !getTaskTimeRemaining(camp)?.isExpired && (
+          <span className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-emerald-400 font-medium flex items-center gap-1 shadow-xs border border-emerald-500/30">
+            <Clock className="w-2.5 h-2.5 text-emerald-400" />
+            <span>{getTaskTimeRemaining(camp)?.formatted}</span>
+          </span>
+        )}
+
+        {/* Duration Badge */}
+        <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/85 text-[10.5px] font-mono text-white font-medium shadow-xs">
+          {camp.watchDurationSec === 180 ? '3:00' : `${camp.watchDurationSec || 180}s`}
+        </span>
+      </div>
+
+      {/* Card Content & Metadata (YouTube Style: Avatar Left, Title & Channel Right - NO CATEGORY) */}
+      <div className="p-3.5 flex-1 flex flex-col justify-between space-y-3">
+        <div className="flex items-start gap-3">
+          <img
+            src={camp.channelAvatar}
+            alt={camp.channelName}
+            className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5"
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h3 className="font-bold text-xs sm:text-sm text-deep-ocean dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-matcha-green transition-colors line-clamp-2 leading-snug">
+              {camp.title}
+            </h3>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <span className="truncate">{camp.channelName}</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            </div>
+          </div>
+        </div>
+
+        {/* Goal Progress Bar */}
+        <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-[11px] font-mono">
+            <span className="text-slate-400">Subscribers:</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {camp.currentProgress} / {camp.targetSubscribers} ({progressPercent}%)
+            </span>
+          </div>
+          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#0B1118] overflow-hidden border border-slate-200/80 dark:border-slate-800">
+            <div
+              className="h-full rounded-full transition-all duration-300 bg-deep-ocean dark:bg-slate-600"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Footer Action - NO CATEGORY */}
+        <div className="pt-0.5 flex items-center justify-end text-xs font-mono">
+          <div className="flex items-center gap-1.5 text-deep-ocean dark:text-[#C7DFA3] font-bold group-hover:translate-x-0.5 transition-all text-xs bg-slate-100 dark:bg-[#16222F] hover:bg-slate-200 dark:hover:bg-[#1f2e3f] px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+            <span>
+              {isPromotionalCampaign(camp)
+                ? 'Showcase Preview'
+                : isCompleted || isUserSubscribed
+                ? 'Subscribed'
+                : 'Watch & Earn'}
+            </span>
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 2. YouTube Shorts & Instagram Reels Card (Vertical 9:16 YouTube Shorts / Reels Dimension & Layout)
+const VerticalShortsCard: React.FC<{
+  camp: Campaign;
+  user: UserProfile;
+  onSelectCampaign: (c: Campaign) => void;
+}> = ({ camp, user, onSelectCampaign }) => {
+  const progressPercent = Math.min(100, Math.round((camp.currentProgress / camp.targetSubscribers) * 100));
+  const isUserSubscribed = user?.subscribedChannelIds?.includes(camp.channelId);
+  const isCompleted = user?.completedCampaignIds?.includes(camp.id);
+  const isInsta = camp.platform === 'instagram';
+
+  return (
+    <div
+      onClick={() => onSelectCampaign(camp)}
+      className="group relative aspect-[9/16] rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 shadow-card hover:shadow-elevated transition-all duration-300 cursor-pointer flex flex-col justify-between p-3 select-none active:scale-[0.98]"
+    >
+      {/* Vertical Full Bleed Thumbnail */}
+      <img
+        src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
+        alt={camp.title}
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        onError={(e) => {
+          if (camp.youtubeId) {
+            (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+          }
+        }}
+      />
+
+      {/* Vertical Ambient Scrims */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-transparent to-transparent h-24 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none" />
+
+      {/* Top Badges Row */}
+      <div className="relative z-10 flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1">
+          {isInsta ? (
+            <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-pink-400 border border-pink-500/40 text-[9.5px] font-mono font-bold uppercase flex items-center gap-1 shadow-xs">
+              <InstagramIcon className="w-2.5 h-2.5 text-pink-400" />
+              <span>REEL</span>
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-rose-400 border border-rose-500/40 text-[9.5px] font-mono font-bold uppercase flex items-center gap-1 shadow-xs">
+              <YouTubeShortsIcon className="w-2.5 h-2.5 text-rose-500" />
+              <span>SHORT</span>
+            </span>
+          )}
+
+          {camp.isVip && (
+            <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-mono font-bold uppercase flex items-center gap-0.5 shadow-xs">
+              <Sparkles className="w-2.5 h-2.5" />
+              <span>VIP</span>
+            </span>
+          )}
+        </div>
+
+        {/* Reward Pill */}
+        <span className="px-2 py-0.5 rounded-md bg-emerald-500/90 text-white text-[10px] font-mono font-bold backdrop-blur-xs shadow-xs">
+          +{camp.rewardBugs.toFixed(0)} BUGs
+        </span>
+      </div>
+
+      {/* Bottom Content Area (Title, Creator, Progress, CTA - NO CATEGORY) */}
+      <div className="relative z-10 space-y-2">
+        {/* Duration & Progress Count */}
+        <div className="flex items-center justify-between text-[10px] font-mono text-slate-300">
+          <div className="flex items-center gap-1.5">
+            <span className="px-1.5 py-0.2 rounded bg-black/70 text-slate-200 font-medium">
+              {camp.watchDurationSec === 180 ? '3 Min' : `${camp.watchDurationSec || 180}s`}
+            </span>
+            {getTaskTimeRemaining(camp) && !getTaskTimeRemaining(camp)?.isExpired && (
+              <span className="px-1.5 py-0.2 rounded bg-black/80 text-[9px] font-mono text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5 text-emerald-400" />
+                <span>{getTaskTimeRemaining(camp)?.formatted}</span>
+              </span>
+            )}
+          </div>
+          <span className="text-white/80 font-semibold text-[10px]">
+            {camp.currentProgress}/{camp.targetSubscribers}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-bold text-xs sm:text-[13px] text-white line-clamp-2 leading-snug drop-shadow-md group-hover:text-[#C7DFA3] transition-colors">
+          {camp.title}
+        </h3>
+
+        {/* Creator Info */}
+        <div className="flex items-center gap-1.5">
+          <img
+            src={camp.channelAvatar}
+            alt={camp.channelName}
+            className="w-5 h-5 rounded-full object-cover border border-white/30 shrink-0"
+          />
+          <span className="text-[11px] text-slate-200 font-semibold truncate flex-1">
+            {camp.channelName}
+          </span>
+          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+        </div>
+
+        {/* Mini Progress Bar */}
+        <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-400 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-0.5">
+          <div className="w-full py-1.5 px-2 rounded-lg bg-white/15 hover:bg-white/25 backdrop-blur-xs border border-white/20 text-white text-xs font-semibold flex items-center justify-center gap-1 group-hover:bg-white group-hover:text-black transition-all">
+            <span>
+              {isCompleted || isUserSubscribed
+                ? (isInsta ? 'Following' : 'Subscribed')
+                : (isInsta ? 'Open Reel' : 'Watch Short')}
+            </span>
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const TasksView: React.FC<TasksViewProps> = ({
   campaigns,
   onSelectCampaign,
@@ -50,19 +300,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const activeCampaigns = campaigns.filter(c => {
-    if (c.status === 'completed') return false;
+    if (c.status === 'completed' || c.status === 'expired' || isTaskExpired(c)) return false;
     if (user?.completedCampaignIds?.includes(c.id)) return false;
     if (user?.subscribedChannelIds?.includes(c.channelId)) return false;
     return true;
   });
 
-  const shortsCount = activeCampaigns.filter(c => c.isShort).length;
+  const shortsCount = activeCampaigns.filter(c => c.isShort && c.platform !== 'instagram').length;
   const videosCount = activeCampaigns.filter(c => !c.isShort && c.platform !== 'instagram').length;
   const reelsCount = activeCampaigns.filter(c => c.platform === 'instagram').length;
 
   const filteredCampaigns = useMemo(() => {
     let result = activeCampaigns.filter((c) => {
-      if (activeTab === 'shorts') return c.isShort;
+      if (activeTab === 'shorts') return c.isShort && c.platform !== 'instagram';
       if (activeTab === 'videos') return !c.isShort && c.platform !== 'instagram';
       if (activeTab === 'reels') return c.platform === 'instagram';
       return true;
@@ -90,8 +340,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
       });
     }
 
+    // VIP Priority Rule: VIP tasks ALWAYS appear at the very top so users complete them first!
+    result.sort((a, b) => {
+      const aVip = a.isVip ? 1 : 0;
+      const bVip = b.isVip ? 1 : 0;
+      if (bVip !== aVip) return bVip - aVip;
+      return 0;
+    });
+
     return result;
   }, [activeCampaigns, activeTab, searchQuery, sortBy]);
+
+  // For 'all' tab, separate into Videos (16:9) and Shorts/Reels (9:16)
+  const videoCampaigns = useMemo(() => {
+    return filteredCampaigns.filter(c => !c.isShort && c.platform !== 'instagram');
+  }, [filteredCampaigns]);
+
+  const shortAndReelCampaigns = useMemo(() => {
+    return filteredCampaigns.filter(c => c.isShort || c.platform === 'instagram');
+  }, [filteredCampaigns]);
 
   return (
     <div className="px-4 sm:px-6 md:px-8 py-5 sm:py-6 space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-deep-ocean dark:text-slate-100 min-h-full transition-colors max-w-7xl mx-auto">
@@ -244,8 +511,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
           </p>
           <p className="text-xs text-slate-400">
             {campaigns.length > 0 && activeCampaigns.length === 0
-              ? 'You have finished all active creator tasks (+5 BUGs per task credited). Completed tasks are removed from your feed. Check back soon for new campaigns or launch your own task!'
-              : 'Try adjusting your search query or switching to another category.'}
+              ? 'You have finished all active creator tasks. Completed tasks are removed from your feed. Check back soon for new campaigns or launch your own task!'
+              : 'Try adjusting your search query or switching to another tab.'}
           </p>
           {searchQuery && (
             <button
@@ -258,121 +525,92 @@ export const TasksView: React.FC<TasksViewProps> = ({
         </div>
       ) : viewMode === 'grid' ? (
         /* GRID VIEW */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCampaigns.map((camp) => {
-            const progressPercent = Math.min(100, Math.round((camp.currentProgress / camp.targetSubscribers) * 100));
-            const isUserSubscribed = user.subscribedChannelIds.includes(camp.channelId);
-
-            return (
-              <div
-                key={camp.id}
-                onClick={() => onSelectCampaign(camp)}
-                className="rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-card hover:shadow-elevated transition-all cursor-pointer overflow-hidden flex flex-col justify-between group active:scale-[0.99]"
-              >
-                {/* Thumbnail Container */}
-                <div className="relative aspect-video w-full overflow-hidden bg-slate-900">
-                  <img
-                    src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
-                    alt={camp.title}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                    onError={(e) => {
-                      if (camp.youtubeId) {
-                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
-                      }
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Format Badge */}
-                  {camp.platform === 'instagram' ? (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 backdrop-blur-xs text-pink-400 border border-pink-500/40 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
-                      <InstagramIcon className="w-2.5 h-2.5 text-pink-500" />
-                      <span>REEL</span>
-                    </span>
-                  ) : camp.isShort ? (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 backdrop-blur-xs text-rose-400 border border-rose-500/40 text-[10px] font-mono font-bold uppercase flex items-center gap-1">
-                      <YouTubeShortsIcon className="w-2.5 h-2.5 text-rose-500" />
-                      <span>SHORT</span>
-                    </span>
-                  ) : null}
-
-                  {/* Reward Pill */}
-                  {isPromotionalCampaign(camp) ? (
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500/90 text-white border border-amber-600 text-[10px] font-mono font-bold backdrop-blur-xs shadow-2xs">
-                      Tasks Not Available
-                    </span>
-                  ) : (
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-emerald-50/90 dark:bg-emerald-950/90 text-emerald-800 dark:text-[#C7DFA3] border border-emerald-200 dark:border-emerald-800/60 text-[11px] font-mono font-bold backdrop-blur-xs shadow-2xs">
-                      <span>+{camp.rewardBugs.toFixed(0)} BUGs</span>
-                    </span>
-                  )}
-
-                  {/* Duration Badge */}
-                  <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-slate-300">
-                    {camp.watchDurationSec === 180 ? '3 Min' : `${camp.watchDurationSec || 180}s`}
-                  </span>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-3">
-                  <div className="space-y-2">
+        <div className="space-y-8">
+          {/* ALL TASKS TAB: Presents Long Videos (16:9) + Shorts & Reels (9:16) */}
+          {activeTab === 'all' ? (
+            <>
+              {/* Long-Form YouTube Videos Section (16:9 Grid) */}
+              {videoCampaigns.length > 0 && (
+                <div className="space-y-3.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={camp.channelAvatar}
-                        alt={camp.channelName}
-                        className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                      />
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
-                        {camp.channelName}
-                      </span>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <YouTubeIcon className="w-4 h-4 text-rose-500" />
+                      <h2 className="text-xs sm:text-sm font-bold uppercase tracking-tight text-deep-ocean dark:text-slate-100 font-mono">
+                        YouTube Videos ({videoCampaigns.length})
+                      </h2>
                     </div>
-
-                    <h3 className="font-bold text-xs sm:text-sm text-deep-ocean dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-matcha-green transition-colors line-clamp-2 leading-snug">
-                      {camp.title}
-                    </h3>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-slate-400">
-                        {camp.platform === 'instagram' ? 'Followers:' : 'Subscribers:'}
-                      </span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        {camp.currentProgress} / {camp.targetSubscribers} ({progressPercent}%)
-                      </span>
-                    </div>
-
-                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#0B1118] overflow-hidden border border-slate-200/80 dark:border-slate-800">
-                      <div
-                        className="h-full rounded-full transition-all duration-300 bg-deep-ocean dark:bg-slate-600"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Footer Action */}
-                  <div className="pt-0.5 flex items-center justify-between text-xs font-mono">
-                    <span className="text-[11px] text-slate-400">
-                      {camp.category}
+                    <span className="text-[11px] font-mono text-slate-400">
+                      16:9 Widescreen
                     </span>
+                  </div>
 
-                    <div className="flex items-center gap-1 text-deep-ocean dark:text-[#C7DFA3] font-bold group-hover:translate-x-0.5 transition-all text-xs bg-slate-100 dark:bg-[#16222F] px-2.5 py-1 rounded-md">
-                      <span>
-                        {isPromotionalCampaign(camp) 
-                          ? 'Showcase Preview' 
-                          : isUserSubscribed 
-                          ? (camp.platform === 'instagram' ? 'Following' : 'Subscribed') 
-                          : (camp.platform === 'instagram' ? 'Open Reel Task' : camp.isShort ? 'Watch Short' : 'Watch Task')}
-                      </span>
-                      <ArrowRight className="w-3 h-3" />
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {videoCampaigns.map((camp) => (
+                      <YouTubeVideoCard
+                        key={camp.id}
+                        camp={camp}
+                        user={user}
+                        onSelectCampaign={onSelectCampaign}
+                      />
+                    ))}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              )}
+
+              {/* Shorts & Reels Section (Vertical 9:16 Cards Grid) */}
+              {shortAndReelCampaigns.length > 0 && (
+                <div className="space-y-3.5 pt-2">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <YouTubeShortsIcon className="w-4 h-4 text-rose-500" />
+                      <InstagramIcon className="w-3.5 h-3.5 text-pink-500" />
+                      <h2 className="text-xs sm:text-sm font-bold uppercase tracking-tight text-deep-ocean dark:text-slate-100 font-mono">
+                        Shorts &amp; Reels ({shortAndReelCampaigns.length})
+                      </h2>
+                    </div>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      Vertical 9:16 Format
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                    {shortAndReelCampaigns.map((camp) => (
+                      <VerticalShortsCard
+                        key={camp.id}
+                        camp={camp}
+                        user={user}
+                        onSelectCampaign={onSelectCampaign}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'videos' ? (
+            /* YOUTUBE VIDEOS TAB: 16:9 Grid */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredCampaigns.map((camp) => (
+                <YouTubeVideoCard
+                  key={camp.id}
+                  camp={camp}
+                  user={user}
+                  onSelectCampaign={onSelectCampaign}
+                />
+              ))}
+            </div>
+          ) : (
+            /* SHORTS OR REELS TAB: Vertical 9:16 Grid */
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+              {filteredCampaigns.map((camp) => (
+                <VerticalShortsCard
+                  key={camp.id}
+                  camp={camp}
+                  user={user}
+                  onSelectCampaign={onSelectCampaign}
+                />
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         /* COMPACT LIST VIEW */
@@ -402,7 +640,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         <img
                           src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
                           alt={camp.title}
-                          className="w-14 h-9 rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                          className={`rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0 ${
+                            camp.isShort || camp.platform === 'instagram' ? 'w-8 h-12 aspect-[9/16]' : 'w-16 h-10 aspect-video'
+                          }`}
                           onError={(e) => {
                             if (camp.youtubeId) {
                               (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
@@ -413,9 +653,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
                           <p className="font-bold text-deep-ocean dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-matcha-green truncate max-w-xs md:max-w-sm">
                             {camp.title}
                           </p>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-0.5">
+                          <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
                             <span>{camp.channelName}</span>
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            {getTaskTimeRemaining(camp) && !getTaskTimeRemaining(camp)?.isExpired && (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded">
+                                <Clock className="w-2.5 h-2.5" />
+                                {getTaskTimeRemaining(camp)?.formatted}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -423,7 +669,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
                     <td className="py-3 px-4 hidden sm:table-cell font-mono">
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {camp.platform === 'instagram' ? 'Reel' : camp.isShort ? 'Short' : 'Video 16:9'}
+                        {camp.platform === 'instagram' ? 'Reel (9:16)' : camp.isShort ? 'Short (9:16)' : 'Video (16:9)'}
                       </span>
                     </td>
 
@@ -472,7 +718,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                         {isPromotionalCampaign(camp) ? 'Showcase' : 'Start'}
                       </button>
                     </td>
-                    </tr>
+                  </tr>
                 );
               })}
             </tbody>

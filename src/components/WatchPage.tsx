@@ -5,14 +5,10 @@ import {
   Coins, 
   Clock, 
   ShieldCheck, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Share2, 
   Sparkles, 
   AlertCircle, 
   ArrowLeft, 
   ArrowRight, 
-  Send, 
   Check,
   ExternalLink,
   Lock,
@@ -24,7 +20,7 @@ import {
 import { Campaign, UserProfile } from '../types';
 import { computeAttentionHash, generateNonce } from '../utils/crypto';
 import { playSuccessFanfare, playCoinSound, playTickSound } from '../utils/audio';
-import { isPromotionalCampaign } from '../utils/campaignHelper';
+import { isPromotionalCampaign, isTaskExpired, getTaskTimeRemaining } from '../utils/campaignHelper';
 
 const YouTubeIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -85,10 +81,6 @@ export const WatchPage: React.FC<WatchPageProps> = ({
   const [attentionHash, setAttentionHash] = useState<string>('');
   const [copiedHash, setCopiedHash] = useState<boolean>(false);
 
-  // Likes & Social
-  const [likesCount, setLikesCount] = useState<number>(campaign.likesCount || 104);
-  const [hasLiked, setHasLiked] = useState<boolean>(false);
-  const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
   const [isNotAvailableModalOpen, setIsNotAvailableModalOpen] = useState<boolean>(false);
 
   const verificationSectionRef = useRef<HTMLDivElement>(null);
@@ -99,26 +91,6 @@ export const WatchPage: React.FC<WatchPageProps> = ({
     const secs = totalSecs % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
-
-  const [comments, setComments] = useState<Array<{ id: string; author: string; avatar: string; text: string; time: string; verified: boolean }>>([
-    {
-      id: 'c1',
-      author: 'Rohit Kumar',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      text: 'Watched the full 3 minutes, subscribed to the channel, and answered the creator quiz! Instant BUGs received.',
-      time: '12m ago',
-      verified: true,
-    },
-    {
-      id: 'c2',
-      author: 'Aman Verma',
-      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80',
-      text: 'Super clean flow! Step 1 redirects to YouTube to subscribe, then Step 2 unlocks the MCQ.',
-      time: '1h ago',
-      verified: true,
-    },
-  ]);
-  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     const nonce = generateNonce(12);
@@ -205,6 +177,8 @@ export const WatchPage: React.FC<WatchPageProps> = ({
   };
 
   // Submit Answer to Creator's MCQ Quiz
+  // Policy: User must provide proper/correct answer to get fixed 2 BUGs (₹2 INR).
+  // If incorrect, prompt user to select the proper answer without crediting reward.
   const handleSubmitQuiz = async () => {
     if (selectedOption === null) {
       setQuizError('Please select an answer option above.');
@@ -212,7 +186,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
     }
 
     if (selectedOption !== campaign.correctAnswerIndex) {
-      setQuizError('Incorrect answer. Please re-check the video and choose the correct answer to verify attention.');
+      setQuizError('❌ Incorrect answer! Please watch carefully and select the proper answer to claim your +2 BUGs.');
       return;
     }
 
@@ -244,8 +218,9 @@ export const WatchPage: React.FC<WatchPageProps> = ({
         colors: ['#31465A', '#89B9E6', '#C7DFA3', '#ffffff', '#10B981'],
       });
 
+      // Award fixed 2 BUGs (₹2) for completing the task with proper answer
       if (onVerificationSuccess) {
-        onVerificationSuccess(campaign, campaign.rewardBugs, hash);
+        onVerificationSuccess(campaign, 2, hash);
       }
     }, 800);
   };
@@ -257,69 +232,118 @@ export const WatchPage: React.FC<WatchPageProps> = ({
     setTimeout(() => setCopiedHash(false), 2000);
   };
 
-  const handleLike = () => {
-    if (hasLiked) {
-      setLikesCount(likesCount - 1);
-      setHasLiked(false);
-    } else {
-      setLikesCount(likesCount + 1);
-      setHasLiked(true);
-    }
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedUrl(true);
-    setTimeout(() => setCopiedUrl(false), 2000);
-  };
-
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    setComments([
-      {
-        id: `c_${Date.now()}`,
-        author: user.name,
-        avatar: user.avatar,
-        text: newComment.trim(),
-        time: 'Just now',
-        verified: isClaimed || hasSubscribed,
-      },
-      ...comments,
-    ]);
-    setNewComment('');
-  };
-
   const duration = campaign.watchDurationSec || 180;
   const progressPercentage = Math.round(((duration - secondsRemaining) / duration) * 100);
-  const recommendedTasks = allCampaigns.filter((c) => c.id !== campaign.id);
+
+  const isAlreadyCompleted = Boolean(
+    user?.completedCampaignIds?.includes(campaign.id) ||
+    user?.subscribedChannelIds?.includes(campaign.channelId)
+  );
+  const isExpired = isTaskExpired(campaign);
+
+  const recommendedTasks = allCampaigns.filter(
+    (c) => c.id !== campaign.id &&
+           !user?.completedCampaignIds?.includes(c.id) &&
+           !user?.subscribedChannelIds?.includes(c.channelId) &&
+           c.status !== 'completed' &&
+           c.status !== 'expired' &&
+           !isTaskExpired(c)
+  ).sort((a, b) => {
+    const aVip = a.isVip ? 1 : 0;
+    const bVip = b.isVip ? 1 : 0;
+    if (bVip !== aVip) return bVip - aVip;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
 
   return (
     <div className="flex-1 p-3 sm:p-5 md:p-8 max-w-7xl mx-auto space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-slate-800 dark:text-slate-100 min-h-full transition-colors font-['Plus_Jakarta_Sans',sans-serif]">
       
-      {/* Top Header Breadcrumb */}
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
-        <button
-          onClick={onBackToFeed}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-[#131D28] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-mono font-medium border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-subtle"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Feed</span>
-        </button>
-
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-matcha-green/30 text-matcha-dark dark:bg-emerald-950/70 dark:text-[#C7DFA3] border border-matcha-green/50 dark:border-emerald-800/60 font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Attention Verification Engine</span>
-          </span>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
         
         {/* Main Watch Column (8 cols) */}
         <div className="lg:col-span-8 space-y-5">
+
+          {/* Expired Notification */}
+          {isExpired && (
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-rose-900 dark:text-rose-200 animate-in fade-in shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider font-mono">
+                    Task 24-Hour Window Expired
+                  </p>
+                  <p className="text-xs text-rose-800/90 dark:text-rose-300/80">
+                    This task was live for 24 hours and has now automatically closed. It is no longer eligible for rewards.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onBackToFeed}
+                className="px-4 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white text-xs font-bold font-mono shrink-0 transition-colors cursor-pointer shadow-subtle"
+              >
+                Back to Feed
+              </button>
+            </div>
+          )}
+
+          {/* Already Completed Notification */}
+          {isAlreadyCompleted && (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-900 dark:text-amber-200 animate-in fade-in shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-matcha-green shrink-0" />
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider font-mono">
+                    Task Already Completed (Single Attempt Used)
+                  </p>
+                  <p className="text-xs text-amber-800/90 dark:text-amber-300/80">
+                    You have already completed this 3-minute task and collected +2 BUGs. This task is removed from your feed and cannot be repeated.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onBackToFeed}
+                className="px-4 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white text-xs font-bold font-mono shrink-0 transition-colors cursor-pointer shadow-subtle"
+              >
+                Back to Feed
+              </button>
+            </div>
+          )}
+
+          {/* Video Title & Creator Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={campaign.channelAvatar}
+                alt={campaign.channelName}
+                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+              />
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-snug">
+                  {campaign.title}
+                </h1>
+                <p className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{campaign.channelName}</span>
+                  <span>•</span>
+                  <span>{campaign.category}</span>
+                  {campaign.subscribersCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <span>{campaign.subscribersCount.toLocaleString()} {campaign.platform === 'instagram' ? 'followers' : 'subscribers'}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] font-mono text-xs font-bold border border-emerald-200 dark:border-emerald-800/70 flex items-center gap-1.5 shadow-subtle">
+                <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-[#C7DFA3]" />
+                <span>Reward: +5 BUGs</span>
+              </span>
+            </div>
+          </div>
           
           {/* Player Frame */}
           {campaign.platform === 'instagram' ? (
@@ -445,7 +469,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                   {isClaimed ? (
                     <span className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-700 dark:text-[#C7DFA3] uppercase tracking-wider">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[#C7DFA3]" />
-                      TASK VERIFIED &amp; REWARD CLAIMED (+{campaign.rewardBugs} BUGs)
+                      TASK VERIFIED & REWARD CLAIMED (+2 BUGs)
                     </span>
                   ) : !isReadyToVerify ? (
                     isTabFocused ? (
@@ -512,7 +536,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                 ) : isClaimed ? (
                   <div className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-[#C7DFA3] font-mono font-bold text-xs uppercase tracking-wider border border-emerald-300 dark:border-emerald-800">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[#C7DFA3]" />
-                    <span>+{campaign.rewardBugs} BUGs Claimed</span>
+                    <span>+2 BUGs Claimed</span>
                   </div>
                 ) : (
                   <button
@@ -558,7 +582,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase font-mono tracking-tight flex items-center gap-2">
                     <span>Task Verification &amp; Reward Desk</span>
                     <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] border border-emerald-200 dark:border-emerald-800/60">
-                      +{campaign.rewardBugs} BUGs (₹{campaign.rewardBugs})
+                      +2 BUGs (₹2)
                     </span>
                   </h2>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
@@ -752,7 +776,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                         <span>Attention Nonce Verified Successfully</span>
                       </span>
                       <span className="text-xs font-bold font-mono text-emerald-600 dark:text-[#C7DFA3]">
-                        +{campaign.rewardBugs} BUGs
+                        +2 BUGs
                       </span>
                     </div>
 
@@ -760,8 +784,13 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                       Q: {campaign.question || 'Verified human attention challenge'}
                     </p>
                     <p className="text-xs text-emerald-700 dark:text-emerald-400 font-mono font-bold">
-                      Answer: {campaign.options?.[selectedOption ?? campaign.correctAnswerIndex] || 'Correct answer verified'}
+                      Answer: {campaign.options?.[selectedOption ?? 0] || 'Attention response verified'}
                     </p>
+                    <div className="pt-1">
+                      <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        Task finished! This task has been removed from your feed and cannot be repeated.
+                      </span>
+                    </div>
                   </div>
 
                   {/* SHA-256 Attention Proof Hash */}
@@ -849,21 +878,25 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                   {/* Submit Button */}
                   <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                      Answer correctly to mint {campaign.rewardBugs} BUGs (₹{campaign.rewardBugs}) to your wallet
+                      Submit proper answer to claim fixed 2 BUGs (₹2) to your wallet (Single attempt used)
                     </span>
 
                     <button
                       type="button"
                       onClick={handleSubmitQuiz}
-                      disabled={selectedOption === null || isSubmittingQuiz}
+                      disabled={selectedOption === null || isSubmittingQuiz || isAlreadyCompleted || isExpired}
                       className="px-6 py-2.5 rounded-xl bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-card cursor-pointer transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmittingQuiz ? (
                         <span>Validating Nonce &amp; Computing Proof...</span>
+                      ) : isExpired ? (
+                        <span>Task Window Expired</span>
+                      ) : isAlreadyCompleted ? (
+                        <span>Already Completed</span>
                       ) : (
                         <>
                           <Coins className="w-4 h-4 text-[#C7DFA3]" />
-                          <span>Submit Answer &amp; Claim +{campaign.rewardBugs} BUGs</span>
+                          <span>Submit Answer &amp; Claim +2 BUGs</span>
                         </>
                       )}
                     </button>
@@ -871,169 +904,6 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                 </div>
               )}
 
-            </div>
-
-          </div>
-
-          {/* Video Title */}
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-snug">
-            {campaign.title}
-          </h1>
-
-          {/* Channel Bar & Social Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-slate-200/80 dark:border-slate-800/80">
-            
-            {/* Channel Info & Subscribe */}
-            <div className="flex flex-wrap items-center justify-between sm:justify-start gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={campaign.channelAvatar}
-                  alt={campaign.channelName}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-                />
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">{campaign.channelName}</h3>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-matcha-green" />
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                    {campaign.subscribersCount.toLocaleString()} {campaign.platform === 'instagram' ? 'Followers' : 'Subscribers'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Channel Subscribe Button */}
-              <button
-                onClick={handleSubscribeRedirect}
-                className={`px-3.5 py-1.5 rounded-lg font-mono font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-subtle ${
-                  hasClickedSubscribe || hasSubscribed || isClaimed
-                    ? 'bg-slate-100 dark:bg-[#16222F] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
-              >
-                {hasClickedSubscribe || hasSubscribed || isClaimed ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-matcha-green" />
-                    <span>{campaign.platform === 'instagram' ? 'Following' : 'Subscribed'}</span>
-                  </>
-                ) : (
-                  <>
-                    {campaign.platform === 'instagram' ? (
-                      <InstagramIcon className="w-3.5 h-3.5 text-white" />
-                    ) : (
-                      <YouTubeIcon className="w-3.5 h-3.5 text-white" />
-                    )}
-                    <span>
-                      {campaign.platform === 'instagram' 
-                        ? `Follow (+${campaign.rewardBugs} BUGs)` 
-                        : `Subscribe (+${campaign.rewardBugs} BUGs)`}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Like & Share */}
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              <div className="flex items-center rounded-lg bg-slate-100 dark:bg-[#131D28] border border-slate-200 dark:border-slate-700 overflow-hidden shadow-subtle">
-                <button
-                  onClick={handleLike}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-[#16222F] transition-colors cursor-pointer ${
-                    hasLiked ? 'text-deep-ocean dark:text-matcha-green' : 'text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  <span>{likesCount.toLocaleString()}</span>
-                </button>
-                <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700" />
-                <button className="px-2.5 py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#16222F] transition-colors cursor-pointer">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <button
-                onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#131D28] hover:bg-slate-200 dark:hover:bg-[#16222F] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-colors cursor-pointer shadow-subtle"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{copiedUrl ? 'Copied' : 'Share'}</span>
-              </button>
-            </div>
-
-          </div>
-
-          {/* Description Box */}
-          <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 space-y-2 text-xs md:text-sm shadow-card">
-            <div className="flex items-center gap-3 font-mono text-slate-500 dark:text-slate-400 text-xs">
-              <span>{campaign.viewsCount.toLocaleString()} views</span>
-              <span>•</span>
-              <span>{campaign.uploadedAt}</span>
-              <span>•</span>
-              <span className="text-deep-ocean dark:text-matcha-green font-bold uppercase">{campaign.category}</span>
-            </div>
-            <p className="text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed">
-              {campaign.description}
-            </p>
-          </div>
-
-          {/* Comments Section */}
-          <div className="space-y-3.5 pt-2">
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white uppercase font-mono flex items-center gap-2">
-              <span>Verified Viewer Thoughts</span>
-              <span className="text-xs text-slate-400 font-normal">
-                ({comments.length})
-              </span>
-            </h3>
-
-            {/* Comment Form */}
-            <form onSubmit={handleAddComment} className="flex gap-2.5 items-start">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-              />
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  placeholder="Post verified feedback on this video..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-deep-ocean dark:focus:border-slate-500 transition-colors pr-10 shadow-subtle"
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim()}
-                  className="absolute right-2 top-2 p-1 text-deep-ocean dark:text-matcha-green disabled:opacity-40 cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </form>
-
-            {/* Comments List */}
-            <div className="space-y-2">
-              {comments.map((comm) => (
-                <div key={comm.id} className="flex gap-2.5 p-3 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800/80 shadow-subtle">
-                  <img
-                    src={comm.avatar}
-                    alt={comm.author}
-                    className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                  />
-                  <div className="flex-1 text-xs">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-bold text-slate-900 dark:text-white">{comm.author}</span>
-                      {comm.verified && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-matcha-green/30 text-matcha-dark dark:bg-emerald-950/70 dark:text-[#C7DFA3] border border-matcha-green/50 dark:border-emerald-800/60 font-mono text-[9px] uppercase font-bold">
-                          <Check className="w-2.5 h-2.5" />
-                          <span>Verified</span>
-                        </span>
-                      )}
-                      <span className="text-[10px] text-slate-400 font-mono">{comm.time}</span>
-                    </div>
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{comm.text}</p>
-                  </div>
-                </div>
-              ))}
             </div>
 
           </div>
@@ -1051,40 +921,56 @@ export const WatchPage: React.FC<WatchPageProps> = ({
           </div>
 
           <div className="space-y-2.5">
-            {recommendedTasks.slice(0, 7).map((rec) => (
-              <div
-                key={rec.id}
-                onClick={() => onSelectCampaign(rec)}
-                className="flex gap-2.5 p-2 rounded-xl bg-white dark:bg-[#131D28] hover:bg-slate-50 dark:hover:bg-[#16222F] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-all shadow-subtle group"
-              >
-                <div className="relative w-28 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-                  <img
-                    src={rec.thumbnailUrl || `https://img.youtube.com/vi/${rec.youtubeId}/hqdefault.jpg`}
-                    alt={rec.title}
-                    className="w-full h-full object-cover group-hover:scale-103 transition-transform"
-                  />
-                  <span className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[9px] font-mono text-slate-300">
-                    {rec.watchDurationSec === 180 ? '3 Min' : `${rec.watchDurationSec || 180}s`}
-                  </span>
-                </div>
-
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                  <h4 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-deep-ocean dark:group-hover:text-matcha-green line-clamp-2 leading-tight">
-                    {rec.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 truncate">{rec.channelName}</p>
-                  
-                  <div className="flex items-center justify-between mt-1 text-[11px] font-mono">
-                    <span className="text-emerald-700 dark:text-[#C7DFA3] font-bold">
-                      +{rec.rewardBugs} BUGs
-                    </span>
-                    <span className="text-slate-400 text-[10px]">
-                      {rec.currentProgress}/{rec.targetSubscribers}
+            {recommendedTasks.slice(0, 7).map((rec) => {
+              const isVertical = rec.isShort || rec.platform === 'instagram';
+              return (
+                <div
+                  key={rec.id}
+                  onClick={() => onSelectCampaign(rec)}
+                  className="flex gap-2.5 p-2 rounded-xl bg-white dark:bg-[#131D28] hover:bg-slate-50 dark:hover:bg-[#16222F] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-all shadow-subtle group"
+                >
+                  {/* Card Thumbnail: 9:16 for Shorts/Reels, 16:9 for Widescreen */}
+                  <div className={`relative ${isVertical ? 'w-16 aspect-[9/16]' : 'w-28 aspect-video'} rounded-lg overflow-hidden shrink-0 bg-black`}>
+                    <img
+                      src={rec.thumbnailUrl || (rec.youtubeId ? `https://img.youtube.com/vi/${rec.youtubeId}/hqdefault.jpg` : '')}
+                      alt={rec.title}
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform"
+                      onError={(e) => {
+                        if (rec.youtubeId) {
+                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${rec.youtubeId}/0.jpg`;
+                        }
+                      }}
+                    />
+                    {isVertical && (
+                      <span className={`absolute top-1 left-1 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono font-bold border ${
+                        rec.platform === 'instagram' ? 'text-pink-400 border-pink-500/40' : 'text-rose-400 border-rose-500/40'
+                      }`}>
+                        {rec.platform === 'instagram' ? 'REEL' : 'SHORT'}
+                      </span>
+                    )}
+                    <span className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[9px] font-mono text-slate-300">
+                      {rec.watchDurationSec === 180 ? '3m' : `${rec.watchDurationSec || 180}s`}
                     </span>
                   </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                    <h4 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-deep-ocean dark:group-hover:text-matcha-green line-clamp-2 leading-tight">
+                      {rec.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 truncate">{rec.channelName}</p>
+                    
+                    <div className="flex items-center justify-between mt-1 text-[11px] font-mono">
+                      <span className="text-emerald-700 dark:text-[#C7DFA3] font-bold">
+                        +5 BUGs
+                      </span>
+                      <span className="text-slate-400 text-[10px]">
+                        {rec.currentProgress}/{rec.targetSubscribers}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>

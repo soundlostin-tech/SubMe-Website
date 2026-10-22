@@ -10,7 +10,8 @@ import {
   Tv, 
   Image as ImageIcon,
   Sparkles,
-  Play
+  Play,
+  Clock
 } from 'lucide-react';
 import { Campaign, UserProfile } from '../types';
 import { playSuccessFanfare } from '../utils/audio';
@@ -64,9 +65,11 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
 
   // Targets & Budget
   const [targetSubscribers, setTargetSubscribers] = useState<number>(50);
+  const [isVip, setIsVip] = useState<boolean>(false);
   const watchDurationSec = 180; // Fixed 3 Minutes (180s) across all content types
   const rewardBugs = 5; // Fixed 5 BUGs reward per task completion
-  const totalCost = targetSubscribers * 5.0;
+  // Pricing: Standard task = 50 BUGs, VIP task = 200 BUGs (Top priority pinned)
+  const totalCost = isVip ? 200 : 50;
   const isBalanceSufficient = user.bugBalance >= totalCost;
   
   // Verification quiz
@@ -181,7 +184,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
       question: question.trim(),
       options: options.map(o => o.trim() || 'Option'),
       correctAnswerIndex,
-      isVip: false,
+      isVip,
       category: platform === 'instagram' ? 'Reels' : isShort ? 'Shorts' : 'YouTube Video',
       viewsCount: 0,
       likesCount: 0,
@@ -189,6 +192,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
       status: 'active',
       description: taskDescription,
       createdAt: Date.now(),
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Live for strictly 24 hours
       creatorId: user.id,
     };
 
@@ -484,6 +488,74 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
             </div>
           </div>
 
+          {/* Task Visibility Tier: Standard (50 BUGs) vs VIP Spotlight (200 BUGs) */}
+          <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <h3 className="text-xs sm:text-sm font-bold text-deep-ocean dark:text-slate-100 uppercase font-mono">
+                  Task Placement &amp; Visibility Tier
+                </h3>
+              </div>
+              <span className="text-[11px] font-mono text-slate-400">1 BUG = ₹1 INR</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Standard Task Tier (50 BUGs) */}
+              <div
+                onClick={() => setIsVip(false)}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 select-none ${
+                  !isVip
+                    ? 'bg-blue-50/50 dark:bg-blue-950/20 border-deep-ocean dark:border-slate-400 shadow-subtle ring-1 ring-deep-ocean dark:ring-slate-400'
+                    : 'bg-slate-50 dark:bg-[#0E1620] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold font-mono uppercase text-slate-700 dark:text-slate-200">
+                    Standard Task
+                  </span>
+                  <span className="text-xs font-bold font-mono text-deep-ocean dark:text-slate-100">
+                    50 BUGs (₹50)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Task directory aur regular feed placement me live hoga.
+                </p>
+                <div className="pt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-600 dark:text-slate-300">
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${!isVip ? 'text-deep-ocean dark:text-slate-200' : 'text-slate-400'}`} />
+                  <span>Regular priority listing</span>
+                </div>
+              </div>
+
+              {/* VIP Spotlight Tier (200 BUGs) */}
+              <div
+                onClick={() => setIsVip(true)}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden select-none ${
+                  isVip
+                    ? 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-500 dark:border-amber-500 shadow-subtle ring-1 ring-amber-500'
+                    : 'bg-slate-50 dark:bg-[#0E1620] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold font-mono uppercase text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>VIP Spotlight</span>
+                  </span>
+                  <span className="text-xs font-bold font-mono text-amber-700 dark:text-amber-400">
+                    200 BUGs (₹200)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                  <strong className="text-amber-700 dark:text-amber-300">Sabse top par pinned</strong> rahega taaki users sabse pahle aapka task poora karein!
+                </p>
+                <div className="pt-1 flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Top Priority Pinned</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Right Column: Guidelines & Preview (4 cols) */}
@@ -525,7 +597,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
                     <p>
-                      <strong className="text-deep-ocean dark:text-white font-semibold">Viral Retention:</strong> 15s to 60s watch ensures high retention for the YouTube Shorts algorithm.
+                      <strong className="text-deep-ocean dark:text-white font-semibold">3 Minutes Retention:</strong> Full 3 minutes (180s) watch ensures maximum engagement and algorithmic boost.
                     </p>
                   </div>
                   <div className="flex items-start gap-2">
@@ -546,7 +618,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
                     <p>
-                      <strong className="text-deep-ocean dark:text-white font-semibold">60s Watch Duration:</strong> Best for YouTube view-through verification.
+                      <strong className="text-deep-ocean dark:text-white font-semibold">3 Minutes Watch Duration:</strong> Mandatory 3 minutes (180s) watch ensures authentic view-through verification.
                     </p>
                   </div>
                   <div className="flex items-start gap-2">
@@ -610,6 +682,13 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
                   </div>
                 )}
 
+                {isVip && (
+                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-mono font-bold uppercase shadow-subtle flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>VIP PINNED</span>
+                  </span>
+                )}
+
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[#C7DFA3] border border-white/20 text-[10px] font-mono font-bold backdrop-blur-xs">
                   +5 BUGs
                 </span>
@@ -651,7 +730,22 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
           {/* Launch Campaign Summary & Button */}
           <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3 font-mono">
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Deployment Cost:</span>
+              <span className="text-slate-500">Live Duration:</span>
+              <span className="font-bold text-emerald-600 dark:text-[#C7DFA3] flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                24 Hours Live Window
+              </span>
+            </div>
+
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Placement Tier:</span>
+              <span className={`font-bold ${isVip ? 'text-amber-600 dark:text-amber-400' : 'text-deep-ocean dark:text-white'}`}>
+                {isVip ? 'VIP Spotlight (Top Pinned)' : 'Standard Task'}
+              </span>
+            </div>
+
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Live Deployment Cost:</span>
               <span className="font-bold text-deep-ocean dark:text-white">{totalCost} BUGs (₹{totalCost})</span>
             </div>
 

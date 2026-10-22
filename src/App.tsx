@@ -35,6 +35,7 @@ import {
   recordTransactionInDb, 
   recordTaskCompletionInDb 
 } from './lib/supabaseService';
+import { isTaskExpired } from './utils/campaignHelper';
 import { 
   Campaign, 
   UserProfile, 
@@ -108,14 +109,14 @@ export const App: React.FC = () => {
   });
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    const saved = localStorage.getItem('subme_campaigns_v11');
+    const saved = localStorage.getItem('subme_campaigns_v12');
     if (saved) {
       try {
         const parsed: Campaign[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map(c => ({
             ...c,
-            rewardBugs: 5,
+            rewardBugs: 2,
             watchDurationSec: 180,
           }));
         }
@@ -123,7 +124,7 @@ export const App: React.FC = () => {
     }
     return INITIAL_CAMPAIGNS.map(c => ({
       ...c,
-      rewardBugs: 5,
+      rewardBugs: 2,
       watchDurationSec: 180,
     }));
   });
@@ -185,7 +186,7 @@ export const App: React.FC = () => {
   }, [transactions, user?.id]);
 
   useEffect(() => {
-    localStorage.setItem('subme_campaigns_v11', JSON.stringify(campaigns));
+    localStorage.setItem('subme_campaigns_v12', JSON.stringify(campaigns));
   }, [campaigns]);
 
   useEffect(() => {
@@ -254,6 +255,38 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Listen for incoming referral query params (?ref=... or ?referral=...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('referral') || params.get('invite');
+      if (ref) {
+        sessionStorage.setItem('pending_referral_code', ref.trim().toUpperCase());
+      }
+    } catch (e) {}
+  }, []);
+
+  // Periodic automatic check: Auto-expire tasks that exceed the 24-hour live window
+  useEffect(() => {
+    const expireStaleCampaigns = () => {
+      setCampaigns(prev => {
+        let hasChanges = false;
+        const updated = prev.map(c => {
+          if (c.status === 'active' && isTaskExpired(c)) {
+            hasChanges = true;
+            return { ...c, status: 'expired' as const };
+          }
+          return c;
+        });
+        return hasChanges ? updated : prev;
+      });
+    };
+
+    expireStaleCampaigns();
+    const interval = setInterval(expireStaleCampaigns, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
   }, []);
 
   // Verification modal state
@@ -387,14 +420,70 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleRegister = (newUser: UserProfile) => {
+  const handleRegister = (newUser: UserProfile, refCode?: string) => {
+    const referralCodeToUse = (refCode || newUser.referredBy || sessionStorage.getItem('pending_referral_code') || '').trim().toUpperCase();
+
     const userWithCompleted: UserProfile = {
       ...newUser,
+      referredBy: referralCodeToUse || undefined,
       completedCampaignIds: newUser.completedCampaignIds || [],
     };
-    setAccounts(prev => [userWithCompleted, ...prev]);
+
+    // If registered via a referral code, credit 5 BUGs to the referrer!
+    if (referralCodeToUse) {
+      setAccounts(prevAccounts => {
+        const referrerIndex = prevAccounts.findIndex(
+          acc => acc.referralCode && acc.referralCode.toUpperCase() === referralCodeToUse
+        );
+
+        if (referrerIndex !== -1) {
+          const referrer = prevAccounts[referrerIndex];
+          const updatedReferrer: UserProfile = {
+            ...referrer,
+            bugBalance: referrer.bugBalance + 5,
+            referralCount: (referrer.referralCount || 0) + 1,
+          };
+
+          const now = Date.now();
+          const bountyTx: WalletTransaction = {
+            id: `tx_ref_${now}`,
+            type: 'REFERRAL_BOUNTY',
+            category: 'reward',
+            amount: 5,
+            timestamp: now,
+            timeStr: new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            userId: referrer.handle.replace('@', ''),
+            description: `Referral Bounty: @${newUser.handle.replace('@', '')} joined using code ${referrer.referralCode}`,
+            hash: `ref_${now.toString(16)}`,
+          };
+
+          try {
+            const referrerTxList: WalletTransaction[] = JSON.parse(
+              localStorage.getItem(`subme_tx_v8_${referrer.id}`) || '[]'
+            );
+            localStorage.setItem(
+              `subme_tx_v8_${referrer.id}`,
+              JSON.stringify([bountyTx, ...referrerTxList])
+            );
+          } catch (e) {}
+
+          upsertProfileToDb(updatedReferrer).catch(() => {});
+          recordTransactionInDb(bountyTx).catch(() => {});
+
+          const updatedAccounts = [...prevAccounts];
+          updatedAccounts[referrerIndex] = updatedReferrer;
+          return [userWithCompleted, ...updatedAccounts];
+        }
+
+        return [userWithCompleted, ...prevAccounts];
+      });
+    } else {
+      setAccounts(prev => [userWithCompleted, ...prev]);
+    }
+
     setUser(userWithCompleted);
     sessionStorage.setItem('subme_auth_session', JSON.stringify(userWithCompleted));
+    sessionStorage.removeItem('pending_referral_code');
     upsertProfileToDb(userWithCompleted).catch(() => {});
     setTransactions([]);
     localStorage.setItem(`subme_tx_v8_${userWithCompleted.id}`, JSON.stringify([]));
@@ -436,7 +525,7 @@ export const App: React.FC = () => {
     if (!user) return;
     const now = Date.now();
     const timeFormatted = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const fixedReward = 5; // Every task completion awards strictly 5 BUGs (₹5 INR)
+    const fixedReward = 2; // Every task completion awards strictly fixed 2 BUGs (₹2 INR) with proper answers
 
     updateUserRecord(prev => {
       const prevCompleted = prev.completedCampaignIds || [];
@@ -562,7 +651,7 @@ export const App: React.FC = () => {
     setAuditLogs(prev => [newAuditLog, ...prev]);
   };
 
-  const handleRequestDeposit = (amount: number, utr: string) => {
+  const handleRequestDeposit = (amount: number, utr: string, screenshotUrl?: string) => {
     if (!user) return;
     const now = Date.now();
     const timeFormatted = new Date(now).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -575,6 +664,7 @@ export const App: React.FC = () => {
       userEmail: user.email,
       amount,
       utr,
+      screenshotUrl,
       status: 'pending',
       requestedAt: timeFormatted,
       timestamp: now,
@@ -746,6 +836,7 @@ export const App: React.FC = () => {
     updateUserRecord(prev => ({
       ...prev,
       bugBalance: prev.bugBalance + bounty,
+      referralCount: (prev.referralCount || 0) + 1,
     }));
 
     const newTx: WalletTransaction = {
@@ -843,7 +934,7 @@ export const App: React.FC = () => {
   };
 
   const handleRequestPayout = (amount: number, vpa: string) => {
-    if (!user || user.bugBalance < amount) return;
+    if (!user || amount < 50 || user.bugBalance < amount) return;
     const now = Date.now();
     const timeFormatted = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1123,7 +1214,7 @@ export const App: React.FC = () => {
       <CommandPaletteModal
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        campaigns={campaigns}
+        campaigns={campaigns.filter(c => !user?.completedCampaignIds?.includes(c.id) && c.status !== 'completed' && c.status !== 'expired' && !isTaskExpired(c))}
         onSelectCampaign={handleSelectCampaign}
         onNavigateTab={(tab) => {
           setActiveTab(tab);

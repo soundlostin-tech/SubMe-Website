@@ -1,4 +1,4 @@
-export type CampaignStatus = 'active' | 'completed' | 'paused';
+export type CampaignStatus = 'active' | 'completed' | 'paused' | 'expired';
 export type ThemeMode = 'light' | 'dark';
 
 export interface Campaign {
@@ -28,6 +28,7 @@ export interface Campaign {
   status: CampaignStatus;
   description: string;
   createdAt: number;
+  expiresAt?: number;
   creatorId: string;
   isPromotional?: boolean;
 }
@@ -73,6 +74,8 @@ export interface UserProfile {
   reputationScore: number;
   subscribedChannelIds: string[];
   completedCampaignIds?: string[];
+  referredBy?: string;
+  referralCount?: number;
 }
 
 export interface VerificationSession {
@@ -111,6 +114,7 @@ export interface DepositRequest {
   amount: number; // in INR / BUGs
   utr: string; // 12-digit UTR
   status: DepositStatus;
+  screenshotUrl?: string; // base64 or hosted URL of payment confirmation receipt
   requestedAt: string;
   timestamp: number;
   reviewedAt?: string;

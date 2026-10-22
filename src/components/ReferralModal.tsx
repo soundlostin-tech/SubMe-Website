@@ -26,7 +26,9 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const referralUrl = `https://subme.grow/invite/${user.referralCode}`;
+  const referralUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}?ref=${user.referralCode}`
+    : `https://subme.app?ref=${user.referralCode}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralUrl);
@@ -120,28 +122,6 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
             </div>
           </div>
 
-        </div>
-
-        {/* Simulator */}
-        <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#16222F] border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-subtle">
-          <div className="text-xs">
-            <p className="font-bold text-slate-900 dark:text-white">Simulate Creator Referral Activation</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Test instant +5.00 BUG credit</p>
-          </div>
-          <button
-            onClick={() => {
-              onSimulateReferral();
-              confetti({
-                particleCount: 50,
-                spread: 60,
-                origin: { y: 0.6 },
-                colors: ['#31465A', '#89B9E6', '#C7DFA3', '#ffffff'],
-              });
-            }}
-            className="px-3.5 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white text-xs font-semibold uppercase tracking-wider shadow-subtle border border-slate-600 cursor-pointer active:scale-95"
-          >
-            + Claim ₹5 Bounty
-          </button>
         </div>
 
         <button

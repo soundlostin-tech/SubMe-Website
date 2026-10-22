@@ -62,7 +62,7 @@ export const PayoutsView: React.FC<PayoutsViewProps> = ({
             <span>Payout Claims &amp; Settlements</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Liquid settlement engine pegged ₹1:1 BUG via NPCI UPI gateway
+            Liquid settlement engine pegged ₹1:1 BUG via NPCI UPI gateway • Minimum payout threshold: ₹50.00 (50 BUGs)
           </p>
         </div>
 

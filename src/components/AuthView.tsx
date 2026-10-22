@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Lock, 
   Mail, 
@@ -14,7 +14,8 @@ import {
   ArrowRight,
   Sun,
   Moon,
-  Sparkles
+  Sparkles,
+  Gift
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
 import { getYouTubeAvatarUrl, extractYouTubeHandle } from '../utils/youtubeAvatar';
@@ -24,7 +25,7 @@ interface AuthViewProps {
   toggleTheme: () => void;
   registeredUsers: UserProfile[];
   onLogin: (user: UserProfile) => void;
-  onRegister: (newUser: UserProfile) => void;
+  onRegister: (newUser: UserProfile, referralCode?: string) => void;
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({
@@ -49,6 +50,26 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpChannelUrl, setSignUpChannelUrl] = useState('');
+  const [signUpReferralCode, setSignUpReferralCode] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('ref') || params.get('referral') || params.get('invite') || sessionStorage.getItem('pending_referral_code') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  // Switch to signup mode automatically if a referral link is opened
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('referral') || params.get('invite') || sessionStorage.getItem('pending_referral_code');
+      if (ref) {
+        setSignUpReferralCode(ref.trim().toUpperCase());
+        setMode('signup');
+      }
+    } catch (e) {}
+  }, []);
 
   // Fixed Admin Credentials
   const FIXED_ADMIN_EMAIL = 'admin@subme.io';
@@ -157,11 +178,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
       activeCampaignsCount: 0,
       reputationScore: 100,
       subscribedChannelIds: [],
+      referredBy: signUpReferralCode.trim().toUpperCase() || undefined,
     };
 
     setSuccessMsg('Account created successfully! Launching your Creator Vault...');
     setTimeout(() => {
-      onRegister(newUser);
+      onRegister(newUser, signUpReferralCode.trim().toUpperCase());
     }, 500);
   };
 
@@ -470,6 +492,29 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       {signUpChannelUrl.trim() ? 'Official channel logo detected from YouTube' : 'Paste your YouTube link to sync your real channel logo'}
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Referral / Invite Code (Optional) */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+                    Referral Code <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-[#C7DFA3] font-semibold flex items-center gap-1">
+                    <Gift className="w-3 h-3" />
+                    Friend gets +5 BUGs
+                  </span>
+                </div>
+                <div className="relative">
+                  <Gift className="w-4 h-4 absolute left-3 top-3 text-emerald-500" />
+                  <input
+                    type="text"
+                    value={signUpReferralCode}
+                    onChange={(e) => setSignUpReferralCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. SUBME-XXXXXX"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-deep-ocean dark:focus:border-slate-500 shadow-subtle uppercase tracking-wider"
+                  />
                 </div>
               </div>
 

@@ -16,10 +16,19 @@ import {
 } from 'lucide-react';
 import { Campaign, UserProfile, FeaturedCreatorBanner } from '../types';
 import { FEATURED_CREATORS, FEATURED_SHORTS } from '../data/mockData';
+import { isTaskExpired } from '../utils/campaignHelper';
 
 const YouTubeShortsIcon: React.FC<{ className?: string }> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M17.77 10.32l-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.94c-1.84.96-2.53 3.23-1.56 5.06 1 1.87 3.27 2.54 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25zM10 14.65v-5.3L15 12l-5 2.65z"/>
+  </svg>
+);
+
+const InstagramIcon: React.FC<{ className?: string }> = ({ className = "w-3 h-3" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="3" ry="3"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
   </svg>
 );
 
@@ -37,7 +46,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   campaigns,
 }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Auto-advance banner every 7 seconds
   useEffect(() => {
@@ -60,30 +68,37 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
-  const categories = [
-    { id: 'all', label: 'All Tasks' },
-    { id: 'gaming', label: 'Gaming' },
-    { id: 'entertainment', label: 'Entertainment' },
-    { id: 'tech', label: 'Tech & Experiments' },
-    { id: 'vlogs', label: 'Vlogs & Guides' },
-  ];
-
   const filteredCampaigns = campaigns.filter((c) => {
-    if (c.status === 'completed') return false;
+    if (c.status === 'completed' || c.status === 'expired' || isTaskExpired(c)) return false;
     if (user?.completedCampaignIds?.includes(c.id)) return false;
     if (user?.subscribedChannelIds?.includes(c.channelId)) return false;
-    if (selectedCategory === 'all') return true;
-    const cat = c.category.toLowerCase();
-    if (selectedCategory === 'gaming') return cat.includes('gaming');
-    if (selectedCategory === 'entertainment') return cat.includes('entertainment') || cat.includes('commentary');
-    if (selectedCategory === 'tech') return cat.includes('tech') || cat.includes('experiment');
-    if (selectedCategory === 'vlogs') return cat.includes('vlog') || cat.includes('guide');
     return true;
   });
 
-  const availableShorts = FEATURED_SHORTS.filter(
-    (short) => !user?.completedCampaignIds?.includes(short.id) && !user?.subscribedChannelIds?.includes(short.channelId)
+  // VIP priority: VIP tasks appear at the very top!
+  filteredCampaigns.sort((a, b) => {
+    const aVip = a.isVip ? 1 : 0;
+    const bVip = b.isVip ? 1 : 0;
+    if (bVip !== aVip) return bVip - aVip;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  const availableShortsAndReels = [
+    ...campaigns.filter(c => (c.isShort || c.platform === 'instagram') && c.status !== 'completed' && c.status !== 'expired' && !isTaskExpired(c)),
+    ...FEATURED_SHORTS,
+  ].filter((item, index, self) => 
+    self.findIndex(t => t.id === item.id) === index &&
+    !user?.completedCampaignIds?.includes(item.id) &&
+    !user?.subscribedChannelIds?.includes(item.channelId) &&
+    !isTaskExpired(item)
   );
+
+  availableShortsAndReels.sort((a, b) => {
+    const aVip = a.isVip ? 1 : 0;
+    const bVip = b.isVip ? 1 : 0;
+    if (bVip !== aVip) return bVip - aVip;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
 
   return (
     <div className="px-4 sm:px-6 md:px-8 py-5 sm:py-6 space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-deep-ocean dark:text-slate-100 min-h-full transition-colors max-w-7xl mx-auto">
@@ -231,7 +246,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           
           <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
             
-            {/* Header + Category Tabs */}
+            {/* Header: Curated Watch Tasks */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h2 className="text-xs sm:text-sm font-bold text-deep-ocean dark:text-slate-100 uppercase tracking-tight flex items-center gap-2">
@@ -243,22 +258,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </p>
               </div>
 
-              {/* Segmented Category Filter Pills */}
-              <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-700/80 rounded-lg p-1 bg-slate-50 dark:bg-[#16222F] overflow-x-auto scrollbar-none">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer shrink-0 ${
-                      selectedCategory === cat.id
-                        ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-slate-100 shadow-subtle border border-slate-200/80 dark:border-slate-700/80 font-bold'
-                        : 'text-slate-500 hover:text-deep-ocean dark:text-slate-400 dark:hover:text-white'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+              <span className="font-mono text-[11px] font-semibold px-2.5 py-1 rounded-md bg-slate-50 dark:bg-[#16222F] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 self-start sm:self-auto">
+                {filteredCampaigns.length} Active Tasks
+              </span>
             </div>
 
             {/* Task Row Items */}
@@ -272,14 +274,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     className="p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#0E1620] hover:bg-slate-50/80 dark:hover:bg-[#16222F] border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-subtle"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative w-16 h-10 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      {/* Card Thumbnail: 9:16 for Shorts/Reels, 16:9 for Widescreen */}
+                      <div className={`relative ${camp.isShort || camp.platform === 'instagram' ? 'w-10 h-16 aspect-[9/16]' : 'w-16 h-10 aspect-video'} rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-slate-200 dark:border-slate-800`}>
                         <img
-                          src={camp.thumbnailUrl || `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg`}
+                          src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/hqdefault.jpg` : '')}
                           alt={camp.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            if (camp.youtubeId) {
+                              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+                            }
+                          }}
                         />
+                        {(camp.isShort || camp.platform === 'instagram') && (
+                          <span className={`absolute top-0.5 left-0.5 px-1 py-0.2 rounded bg-black/85 text-[7px] font-mono font-bold border ${
+                            camp.platform === 'instagram' ? 'text-pink-400 border-pink-500/40' : 'text-rose-400 border-rose-500/40'
+                          }`}>
+                            {camp.platform === 'instagram' ? 'REEL' : 'SHORT'}
+                          </span>
+                        )}
                         <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-slate-300">
-                          {camp.watchDurationSec === 180 ? '3 Min' : `${camp.watchDurationSec || 180}s`}
+                          {camp.watchDurationSec === 180 ? '3m' : `${camp.watchDurationSec || 180}s`}
                         </span>
                       </div>
 
@@ -408,48 +423,59 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-1.5">
                 <YouTubeShortsIcon className="w-3.5 h-3.5 text-rose-500" />
+                <InstagramIcon className="w-3.5 h-3.5 text-pink-500" />
                 <h3 className="text-xs font-bold uppercase text-deep-ocean dark:text-slate-100 font-mono">
-                  60s Shorts Sprints
+                  Shorts &amp; Reels (9:16)
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded border border-rose-200 dark:border-rose-900/40">
-                +25 BUGs
+              <span className="text-[10px] font-mono text-emerald-600 dark:text-[#C7DFA3] font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800/40">
+                +5 BUGs
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              {FEATURED_SHORTS.slice(0, 2).map((short) => (
-                <div
-                  key={short.id}
-                  onClick={() => onSelectCampaign(short)}
-                  className="group relative aspect-[9/16] rounded-lg overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-slate-400 cursor-pointer transition-all flex flex-col justify-between p-2 select-none shadow-subtle"
-                >
-                  <img
-                    src={short.thumbnailUrl || `https://img.youtube.com/vi/${short.youtubeId}/hqdefault.jpg`}
-                    alt={short.title}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 pointer-events-none" />
+              {availableShortsAndReels.slice(0, 4).map((item) => {
+                const isInsta = item.platform === 'instagram';
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => onSelectCampaign(item)}
+                    className="group relative aspect-[9/16] rounded-lg overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-slate-400 cursor-pointer transition-all flex flex-col justify-between p-2 select-none shadow-subtle"
+                  >
+                    <img
+                      src={item.thumbnailUrl || (item.youtubeId ? `https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg` : '')}
+                      alt={item.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      onError={(e) => {
+                        if (item.youtubeId) {
+                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${item.youtubeId}/0.jpg`;
+                        }
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 pointer-events-none" />
 
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="px-1.5 py-0.2 rounded bg-black/70 text-[9px] font-mono font-bold text-rose-400 border border-rose-500/30">
-                      SHORT
-                    </span>
-                    <span className="px-1.5 py-0.2 rounded bg-black/70 text-[#C7DFA3] text-[9px] font-mono font-bold">
-                      +{short.rewardBugs}
-                    </span>
-                  </div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <span className={`px-1.5 py-0.2 rounded bg-black/75 text-[9px] font-mono font-bold border ${
+                        isInsta ? 'text-pink-400 border-pink-500/30' : 'text-rose-400 border-rose-500/30'
+                      }`}>
+                        {isInsta ? 'REEL' : 'SHORT'}
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded bg-black/70 text-[#C7DFA3] text-[9px] font-mono font-bold">
+                        +5 BUGs
+                      </span>
+                    </div>
 
-                  <div className="relative z-10 space-y-0.5 text-white">
-                    <p className="text-[10px] font-semibold line-clamp-2 leading-tight">
-                      {short.title}
-                    </p>
-                    <span className="text-[9px] font-mono text-slate-300 block truncate">
-                      {short.channelName}
-                    </span>
+                    <div className="relative z-10 space-y-0.5 text-white">
+                      <p className="text-[10px] font-semibold line-clamp-2 leading-tight">
+                        {item.title}
+                      </p>
+                      <span className="text-[9px] font-mono text-slate-300 block truncate">
+                        {item.channelName}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

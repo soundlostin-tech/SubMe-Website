@@ -48,11 +48,14 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
       return;
     }
 
+    if (selectedOption !== campaign.correctAnswerIndex) {
+      setErrorMsg('❌ Incorrect answer! Please choose the proper answer from the video to earn the reward.');
+      return;
+    }
+
     setErrorMsg(null);
     setStep('computing');
-
-    const correct = selectedOption === campaign.correctAnswerIndex;
-    setIsAnswerCorrect(correct);
+    setIsAnswerCorrect(true);
 
     const timestamp = Date.now();
     const hash = await computeAttentionHash({
@@ -77,8 +80,8 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
         colors: ['#31465A', '#89B9E6', '#C7DFA3', '#ffffff'],
       });
 
-      // Always credit 5 BUGs for completing the 3-minute task and mark it finished
-      onSuccess(campaign, 5, hash);
+      // Always credit fixed 2 BUGs for completing task with proper answer
+      onSuccess(campaign, 2, hash);
     }, 1100);
   };
 
@@ -152,7 +155,7 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-md bg-matcha-green/30 text-matcha-dark dark:bg-emerald-950/70 dark:text-[#C7DFA3] border border-matcha-green/50 dark:border-emerald-800/60 text-xs font-mono font-bold">
-                +{campaign.rewardBugs.toFixed(1)} BUGs (₹{campaign.rewardBugs.toFixed(1)})
+                +2.0 BUGs (₹2.0)
               </span>
             </div>
 
@@ -249,7 +252,7 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
             <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-800 font-mono text-[11px] text-left text-slate-500 dark:text-slate-400 space-y-0.5">
               <div>&gt; Checking 180s (3 Min) watch time completion... Verified</div>
               <div>&gt; Processing attention answer challenge... Submitted</div>
-              <div className="text-slate-800 dark:text-slate-200 font-bold">&gt; [OK] Crediting +5.00 BUGs to your wallet...</div>
+              <div className="text-slate-800 dark:text-slate-200 font-bold">&gt; [OK] Crediting +2.00 BUGs to your wallet...</div>
             </div>
           </div>
         )}
@@ -262,7 +265,7 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight">
-                Task Completed &amp; +5 BUGs Added!
+                Task Completed &amp; +2 BUGs Added!
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {isAnswerCorrect
@@ -287,10 +290,10 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({
                 </div>
                 <div>
                   <div className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
-                    +5.00 BUGs
+                    +2.00 BUGs
                   </div>
                   <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                    ₹5.00 credited to your Liquid Vault
+                    ₹2.00 credited to your Liquid Vault
                   </div>
                 </div>
               </div>

@@ -57,38 +57,38 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             <span>Timed Attention Proof Window</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Enforces strict continuous browser focus during playback. Pausing or switching tabs halts the attention accumulator.
+            Mandatory continuous 3 minutes (180 seconds) watch window for all video formats (Videos, Shorts, Reels). Anti-cheat accumulator pauses when window is out of focus.
           </p>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 font-mono text-xs text-deep-ocean dark:text-slate-200 font-bold shadow-subtle">
-            Watch Duration: 30s – 60s per Campaign
+            Watch Duration: Mandatory 3 Minutes (180s)
           </div>
         </div>
 
-        {/* Card 3: Cryptographic Anti-Cheat */}
+        {/* Card 3: Task & Referral Bounty Rules */}
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131D28] shadow-card space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-deep-ocean dark:text-slate-100 uppercase font-mono">
             <ShieldCheck className="w-4 h-4 text-deep-ocean dark:text-matcha-green" />
-            <span>Web Crypto SHA-256 Nonces</span>
+            <span>Platform Rewards &amp; Referral Rates</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Generates deterministic session nonces combined with client timestamps and challenge solutions to prevent replay attacks.
+            Standardized algorithmic rates: Viewers earn 2 BUGs per verified task. Referrers receive 5 BUGs bounty upon invitee's first task.
           </p>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 font-mono text-xs text-deep-ocean dark:text-slate-200 font-bold shadow-subtle">
-            SHA-256 Nonce Non-Replay: Enabled
+            Per Task: 2 BUGs (₹2) • Referral: 5 BUGs (₹5)
           </div>
         </div>
 
-        {/* Card 4: Official Vault Gateway */}
+        {/* Card 4: Official Minimum Payout Gateway */}
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131D28] shadow-card space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-deep-ocean dark:text-slate-100 uppercase font-mono">
             <Lock className="w-4 h-4 text-slate-400" />
-            <span>NPCI VPA Liquid Vault Gateway</span>
+            <span>Minimum Payment &amp; Withdrawal Limit</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Official settlement VPA address for atomic reconciliation using 12-digit bank UTR numbers.
+            Strict minimum threshold of ₹50.00 (50 BUGs) required to request any UPI withdrawal. Payouts below ₹50 cannot be processed.
           </p>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-700 font-mono text-xs text-deep-ocean dark:text-slate-200 font-bold shadow-subtle">
-            VPA: theonlyvip786@okhdfcbank (Google Pay Recommended)
+            Minimum Withdrawal: ₹50.00 (50 BUGs)
           </div>
         </div>
 

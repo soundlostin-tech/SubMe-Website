@@ -22,6 +22,7 @@ import {
 import { UserProfile, Campaign } from '../types';
 import { SUPABASE_PROJECT_ID } from '../lib/supabase';
 import { getYouTubeAvatarUrl, extractYouTubeHandle } from '../utils/youtubeAvatar';
+import { isTaskExpired } from '../utils/campaignHelper';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -74,7 +75,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }, 600);
   };
 
-  const referralLink = `https://subme.grow/invite/${user.referralCode}`;
+  const referralLink = typeof window !== 'undefined'
+    ? `${window.location.origin}?ref=${user.referralCode}`
+    : `https://subme.app?ref=${user.referralCode}`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(user.referralCode);
@@ -103,6 +106,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const myCampaigns = campaigns.filter(c => c.creatorId === user.id || c.channelName === user.name);
+  const activeMyCampaigns = myCampaigns.filter(c => c.status !== 'completed' && c.status !== 'expired' && !isTaskExpired(c));
 
   return (
     <div className="px-4 sm:px-6 md:px-8 py-6 space-y-6 select-none bg-[#F8FAFC] dark:bg-[#0B1118] text-slate-800 dark:text-slate-100 min-h-full transition-colors max-w-5xl mx-auto">
@@ -310,12 +314,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{myCampaigns.length}</div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">Running creator promotions</p>
+            <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{activeMyCampaigns.length}</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">Live 24h creator tasks</p>
           </div>
           <div className="pt-1">
-            <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40 text-[10px] font-mono font-bold uppercase">
-              Live tasks
+            <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40 text-[10px] font-mono font-bold uppercase">
+              24h Live Window
             </span>
           </div>
         </div>
@@ -374,20 +378,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Test Referral Simulator */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800/80">
-          <span className="text-xs text-slate-500 font-mono">
-            {bountyTriggered ? '🎉 Referral activated! +5 BUGs (₹5) credited.' : 'Test referral activation simulator:'}
-          </span>
-          <button
-            onClick={handleTestReferral}
-            className="px-3.5 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-subtle border border-slate-600"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-matcha-green" />
-            <span>Simulate Friend Join (+5 BUGs)</span>
-          </button>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Campaign, UserProfile } from '../types';
+import { isTaskExpired, getTaskTimeRemaining } from '../utils/campaignHelper';
 
 interface MyCampaignsModalProps {
   isOpen: boolean;
@@ -153,9 +154,14 @@ export const MyCampaignsModal: React.FC<MyCampaignsModalProps> = ({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <img
-                          src={`https://img.youtube.com/vi/${camp.youtubeId}/mqdefault.jpg`}
+                          src={camp.thumbnailUrl || (camp.youtubeId ? `https://img.youtube.com/vi/${camp.youtubeId}/mqdefault.jpg` : '')}
                           alt={camp.title}
-                          className="w-20 aspect-video rounded-xl object-cover border border-[#31465A] flex-shrink-0"
+                          className={`${camp.isShort || camp.platform === 'instagram' ? 'w-12 aspect-[9/16]' : 'w-20 aspect-video'} rounded-xl object-cover border border-[#31465A] flex-shrink-0`}
+                          onError={(e) => {
+                            if (camp.youtubeId) {
+                              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${camp.youtubeId}/0.jpg`;
+                            }
+                          }}
                         />
                         <div className="min-w-0">
                           <h4 className="font-bold text-sm text-white truncate max-w-md">{camp.title}</h4>
@@ -166,6 +172,17 @@ export const MyCampaignsModal: React.FC<MyCampaignsModalProps> = ({
                                 VIP
                               </span>
                             )}
+                            {isTaskExpired(camp) ? (
+                              <span className="px-1.5 py-0.2 rounded bg-rose-950/60 text-rose-300 border border-rose-800 text-[10px] font-bold uppercase flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                24h Expired (Closed)
+                              </span>
+                            ) : getTaskTimeRemaining(camp) ? (
+                              <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800 text-[10px] font-bold uppercase flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5 text-emerald-400" />
+                                {getTaskTimeRemaining(camp)?.formatted}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </div>

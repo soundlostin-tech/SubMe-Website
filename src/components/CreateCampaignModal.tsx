@@ -60,10 +60,9 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
 
   const youtubeId = extractYouTubeId(videoUrl);
 
-  const baseCost = targetSubscribers * 1.0;
-  const vipCost = isVipSpotlight ? 50.0 : 0.0;
-  const platformFee = 0.0;
-  const totalCost = baseCost + vipCost + platformFee;
+  const baseCost = 50.0;
+  const vipCost = isVipSpotlight ? 150.0 : 0.0;
+  const totalCost = baseCost + vipCost;
   const isBalanceSufficient = user.bugBalance >= totalCost;
 
   const handleQuickPreset = (presetType: string) => {
@@ -141,7 +140,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
       subscribersCount: user.channelSubscribers,
       currentProgress: 0,
       targetSubscribers,
-      rewardBugs: 5.0,
+      rewardBugs: 2.0,
       watchDurationSec: 180,
       question: question.trim(),
       options: options.map(o => o.trim()),
@@ -152,8 +151,9 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
       likesCount: 1,
       uploadedAt: 'Just now',
       status: 'active',
-      description: `Attention-verified campaign deployed by @${user.handle}. Watch for 180s (3 min) and complete attention check to earn 5 BUGs and subscribe.`,
+      description: `Attention-verified campaign deployed by @${user.handle}. Watch for 180s (3 min) and complete attention check to earn 2 BUGs and subscribe.`,
       createdAt: Date.now(),
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Live for strictly 24 hours
       creatorId: user.id,
     };
 
@@ -342,10 +342,10 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                 className="w-full accent-deep-ocean dark:accent-slate-500 cursor-pointer h-2 bg-slate-200 dark:bg-[#0E1620] rounded-lg"
               />
               <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                <span>50 Subs (50 BUGs)</span>
-                <span>250 Subs (250 BUGs)</span>
-                <span>500 Subs (500 BUGs)</span>
-                <span>1,000 Subs (1,000 BUGs)</span>
+                <span>50 Subs (100 BUGs)</span>
+                <span>250 Subs (500 BUGs)</span>
+                <span>500 Subs (1,000 BUGs)</span>
+                <span>1,000 Subs (2,000 BUGs)</span>
               </div>
             </div>
 
@@ -441,7 +441,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             {isVipSpotlight && (
               <div className="flex items-center justify-between text-emerald-700 dark:text-[#C7DFA3]">
                 <span>VIP Spotlight Pinned Booster:</span>
-                <span className="font-bold">+50.00 BUGs (₹50)</span>
+                <span className="font-bold">+150.00 BUGs (₹150)</span>
               </div>
             )}
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
