@@ -67,7 +67,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
   const [targetSubscribers, setTargetSubscribers] = useState<number>(50);
   const [isVip, setIsVip] = useState<boolean>(false);
   const watchDurationSec = 180; // Fixed 3 Minutes (180s) across all content types
-  const rewardBugs = 5; // Fixed 5 BUGs reward per task completion
+  const rewardBugs = 2; // Fixed 2 BUGs reward per task completion
   // Pricing: Standard task = 50 BUGs, VIP task = 200 BUGs (Top priority pinned)
   const totalCost = isVip ? 200 : 50;
   const isBalanceSufficient = user.bugBalance >= totalCost;
@@ -630,7 +630,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
                     <p>
-                      <strong className="text-deep-ocean dark:text-white font-semibold">Reward calibration:</strong> Standard tasks give 1 BUG per authentic watch.
+                      <strong className="text-deep-ocean dark:text-white font-semibold">Reward calibration:</strong> Standard tasks give 2 BUGs per authentic watch.
                     </p>
                   </div>
                 </>
@@ -690,7 +690,7 @@ export const CreateTaskView: React.FC<CreateTaskViewProps> = ({
                 )}
 
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[#C7DFA3] border border-white/20 text-[10px] font-mono font-bold backdrop-blur-xs">
-                  +5 BUGs
+                  +2 BUGs
                 </span>
 
                 <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-slate-300">

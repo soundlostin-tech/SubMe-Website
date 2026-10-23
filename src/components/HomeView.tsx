@@ -16,7 +16,8 @@ import {
   HelpCircle,
   TrendingUp,
   X,
-  Check
+  Check,
+  Copy
 } from 'lucide-react';
 import { Campaign, UserProfile, FeaturedCreatorBanner } from '../types';
 import { FEATURED_CREATORS, FEATURED_SHORTS } from '../data/mockData';
@@ -41,6 +42,7 @@ interface HomeViewProps {
   onSelectCampaign: (campaign: Campaign) => void;
   user: UserProfile;
   campaigns: Campaign[];
+  onOpenVault?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -48,8 +50,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectCampaign,
   user,
   campaigns,
+  onOpenVault,
 }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const [copiedVpa, setCopiedVpa] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
     try {
       return localStorage.getItem('subme_dismiss_guide') !== 'true';
@@ -155,6 +159,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
 
           <button
+            onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs shadow-subtle transition-all cursor-pointer active:scale-95"
+            title="Deposit funds via UPI"
+          >
+            <Coins className="w-3.5 h-3.5" />
+            <span>Deposit BUGs</span>
+          </button>
+
+          <button
             onClick={() => onNavigate('create-task')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark dark:hover:bg-slate-600 text-white text-xs font-semibold shadow-subtle transition-all cursor-pointer active:scale-95"
           >
@@ -191,7 +204,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   New User Quick Start Guide
                 </span>
                 <span className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
-                  ₹5 / Task • Instant UPI
+                  2 BUGs / Task • Instant Rewards
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
@@ -211,7 +224,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Zap className="w-4 h-4 fill-current" />
-                <span>Pehla Task Shuru Karein (Earn ₹5)</span>
+                <span>Pehla Task Shuru Karein (+2 BUGs)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -247,9 +260,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 3
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quiz Answer = ₹5 Turant Credit!</h3>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quiz Answer = +2 BUGs Turant Credit!</h3>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  Chhota sawal answer karein aur turant 5 BUGs (₹5) paayein. Minimum ₹50 hote hi UPI withdraw karein!
+                  Chhota sawal answer karein aur turant 2 BUGs paayein. Minimum 50 BUGs hote hi UPI withdraw karein!
                 </p>
               </div>
             </div>
@@ -305,7 +318,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="pt-1 flex flex-wrap items-center gap-2 pointer-events-auto">
               <span className="px-3 py-1 rounded-md bg-black/85 backdrop-blur-md text-[#C7DFA3] border border-white/20 text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>+{currentFeatured.rewardBugs} BUGs (₹{currentFeatured.rewardBugs})</span>
+                <span>+{currentFeatured.rewardBugs} BUGs</span>
               </span>
 
               <span className="px-2 py-1 rounded-md bg-black/60 backdrop-blur-md text-slate-300 border border-white/20 text-xs font-mono">
@@ -470,9 +483,127 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         </div>
 
-        {/* Right Column (4 cols): Rapid Operations, Shorts Rail & Security Sentinel */}
+        {/* Right Column (4 cols): Deposit Card, Rapid Operations, Shorts Rail & Security Sentinel */}
         <div className="lg:col-span-4 space-y-5">
-          
+
+          {/* Instant UPI Deposit & Vault Desk Card (Home Page Dedicated) */}
+          <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#131D28] border border-emerald-500/30 dark:border-emerald-500/20 shadow-card space-y-3.5 relative overflow-hidden">
+            {/* Ambient emerald background glow */}
+            <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/10 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-[#C7DFA3] flex items-center justify-center shrink-0">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold uppercase text-deep-ocean dark:text-slate-100 font-mono tracking-tight">
+                    Instant UPI Deposit Desk
+                  </h3>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    1 BUG = ₹1 INR • Fast Admin Credit
+                  </span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] border border-emerald-200 dark:border-emerald-800/50 text-[10px] font-mono font-bold">
+                UPI Live
+              </span>
+            </div>
+
+            {/* User Current Balance Snapshot */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+                  Available BUG Balance
+                </span>
+                <div className="text-base font-extrabold text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-emerald-500" />
+                  <span>{user.bugBalance} BUGs</span>
+                </div>
+              </div>
+              <button
+                onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
+                className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-[11px] font-bold shadow-subtle transition-all cursor-pointer active:scale-95"
+              >
+                + Add Money
+              </button>
+            </div>
+
+            {/* Quick Task Packs */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                <span>Select Package</span>
+                <span className="text-[10px] text-slate-400 font-mono">1 BUG = ₹1 INR</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
+                  className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] hover:bg-emerald-500/10 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900 dark:text-white">₹50</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-[#C7DFA3] font-bold">50 BUGs</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                    Standard Task Live Pack
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
+                  className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] hover:bg-amber-500/10 dark:hover:bg-amber-950/30 border border-amber-300/60 dark:border-amber-700/40 hover:border-amber-500 text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-600 dark:text-amber-400">₹200</span>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1 py-0.2 rounded font-bold">VIP PACK</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                    VIP Top Pinned Task Pack
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* Official UPI VPA Copy Bar */}
+            <div className="p-2.5 rounded-lg bg-slate-100/70 dark:bg-[#0E1620]/90 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 dark:text-slate-400 font-mono">Official UPI VPA:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText('theonlyvip786@okhdfcbank');
+                    setCopiedVpa(true);
+                    setTimeout(() => setCopiedVpa(false), 2000);
+                  }}
+                  className="flex items-center gap-1 font-mono text-[10px] font-bold text-emerald-600 dark:text-[#C7DFA3] hover:underline cursor-pointer"
+                >
+                  {copiedVpa ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedVpa ? 'COPIED!' : 'Copy UPI'}</span>
+                </button>
+              </div>
+              <div className="font-mono font-bold text-[11px] text-slate-800 dark:text-slate-200 bg-white dark:bg-[#16222F] px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 select-all truncate">
+                theonlyvip786@okhdfcbank
+              </div>
+            </div>
+
+            {/* Direct CTA Button */}
+            <button
+              onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
+              className="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-subtle transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+            >
+              <Coins className="w-4 h-4" />
+              <span>Deposit Karein (Upload Screenshot)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center font-mono">
+              Screenshot upload mandatory for admin instant verification
+            </p>
+          </div>
+
           {/* Rapid Operations Card */}
           <div className="p-4 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3">
             <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
@@ -510,12 +641,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
 
               <button
-                onClick={() => onNavigate('wallet')}
+                onClick={onOpenVault ? onOpenVault : () => onNavigate('wallet')}
                 className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] hover:bg-slate-100 dark:hover:bg-[#16222F] text-slate-700 dark:text-slate-200 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-800"
               >
                 <div className="flex items-center gap-2">
                   <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-[#C7DFA3]" />
-                  <span>Top Up Liquid Vault</span>
+                  <span>Deposit / Buy BUGs (UPI)</span>
                 </div>
                 <kbd className="text-[10px] bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded text-slate-400">
                   ⌘4
@@ -548,7 +679,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </h3>
               </div>
               <span className="text-[10px] font-mono text-emerald-600 dark:text-[#C7DFA3] font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800/40">
-                +5 BUGs
+                +2 BUGs
               </span>
             </div>
 
@@ -580,7 +711,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         {isInsta ? 'REEL' : 'SHORT'}
                       </span>
                       <span className="px-1.5 py-0.2 rounded bg-black/70 text-[#C7DFA3] text-[9px] font-mono font-bold">
-                        +5 BUGs
+                        +2 BUGs
                       </span>
                     </div>
 

@@ -340,7 +340,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
             <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
               <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] font-mono text-xs font-bold border border-emerald-200 dark:border-emerald-800/70 flex items-center gap-1.5 shadow-subtle">
                 <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-[#C7DFA3]" />
-                <span>Reward: +5 BUGs</span>
+                <span>Reward: +2 BUGs</span>
               </span>
             </div>
           </div>
@@ -961,7 +961,7 @@ export const WatchPage: React.FC<WatchPageProps> = ({
                     
                     <div className="flex items-center justify-between mt-1 text-[11px] font-mono">
                       <span className="text-emerald-700 dark:text-[#C7DFA3] font-bold">
-                        +5 BUGs
+                        +2 BUGs
                       </span>
                       <span className="text-slate-400 text-[10px]">
                         {rec.currentProgress}/{rec.targetSubscribers}

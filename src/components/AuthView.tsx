@@ -230,7 +230,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-[#C7DFA3] text-xs font-mono font-bold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>₹5 Per Task Guaranteed</span>
+            <span>+2 BUGs Per Task Guaranteed</span>
           </div>
 
           <button
@@ -262,20 +262,20 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 SubMe par aakar kya karna hai? (How It Works)
               </h2>
               <p className="text-xs sm:text-sm text-emerald-50 max-w-2xl leading-relaxed">
-                Yahan par aap <b>3 minute videos dekhkar aur channel subscribe karke har task par ₹5 kama sakte hain</b>, ya phir <b>apne YouTube/Instagram channel ke liye real subscribers paane ka task laga sakte hain!</b>
+                Yahan par aap <b>3 minute videos dekhkar aur channel subscribe karke har task par 2 BUGs kama sakte hain</b>, ya phir <b>apne YouTube/Instagram channel ke liye real subscribers paane ka task laga sakte hain!</b>
               </p>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
               <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center font-mono">
                 <span className="text-[10px] text-emerald-200 block uppercase font-bold">Har Task Par</span>
-                <span className="text-xl font-extrabold text-yellow-300">₹5.00</span>
+                <span className="text-xl font-extrabold text-yellow-300">2 BUGs</span>
                 <span className="text-[9px] text-emerald-100 block">Instant Wallet Credit</span>
               </div>
               <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center font-mono">
                 <span className="text-[10px] text-emerald-200 block uppercase font-bold">Minimum Payout</span>
-                <span className="text-xl font-extrabold text-white">₹50</span>
-                <span className="text-[9px] text-emerald-100 block">Seedhe UPI / Bank</span>
+                <span className="text-xl font-extrabold text-white">50 BUGs</span>
+                <span className="text-[9px] text-emerald-100 block">Seedhe UPI / Bank (₹50)</span>
               </div>
             </div>
           </div>
@@ -336,10 +336,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 </div>
                 <div className="space-y-0.5 flex-1">
                   <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    Quiz Ka Answer Do aur Turant ₹5 Paao!
+                    Quiz Ka Answer Do aur Turant +2 BUGs Paao!
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Video se jude ek aasan MCQ sawal ka answer select karein. Submit karte hi instant aapke SubMe wallet me <b>5 BUGs (₹5 INR)</b> credit ho jayenge!
+                    Video se jude ek aasan MCQ sawal ka answer select karein. Submit karte hi instant aapke SubMe wallet me <b>2 BUGs</b> credit ho jayenge!
                   </p>
                 </div>
               </div>

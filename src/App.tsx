@@ -1190,6 +1190,7 @@ export const App: React.FC = () => {
               onSelectCampaign={handleSelectCampaign}
               user={user}
               campaigns={campaigns}
+              onOpenVault={() => setIsVaultOpen(true)}
             />
           )}
         </div>
