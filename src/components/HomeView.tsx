@@ -12,7 +12,11 @@ import {
   Play, 
   Tv, 
   Sparkles,
-  Heart
+  Heart,
+  HelpCircle,
+  TrendingUp,
+  X,
+  Check
 } from 'lucide-react';
 import { Campaign, UserProfile, FeaturedCreatorBanner } from '../types';
 import { FEATURED_CREATORS, FEATURED_SHORTS } from '../data/mockData';
@@ -46,6 +50,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
   campaigns,
 }) => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const [showGuide, setShowGuide] = useState(() => {
+    try {
+      return localStorage.getItem('subme_dismiss_guide') !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const handleDismissGuide = () => {
+    setShowGuide(false);
+    try {
+      localStorage.setItem('subme_dismiss_guide', 'true');
+    } catch (e) {}
+  };
 
   // Auto-advance banner every 7 seconds
   useEffect(() => {
@@ -120,6 +138,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
+          {!showGuide && (
+            <button
+              onClick={() => {
+                setShowGuide(true);
+                try {
+                  localStorage.removeItem('subme_dismiss_guide');
+                } catch (e) {}
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors cursor-pointer"
+              title="View How It Works guide"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">How It Works</span>
+            </button>
+          )}
+
           <button
             onClick={() => onNavigate('create-task')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark dark:hover:bg-slate-600 text-white text-xs font-semibold shadow-subtle transition-all cursor-pointer active:scale-95"
@@ -137,6 +171,91 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 2. Quick Start Onboarding Guide for New Users */}
+      {showGuide && (
+        <div className="relative rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-500/30 dark:border-amber-500/20 p-4 sm:p-5 shadow-sm">
+          <button
+            onClick={handleDismissGuide}
+            className="absolute top-3 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            title="Dismiss guide"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pr-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[11px] font-bold tracking-wider uppercase text-amber-600 dark:text-amber-400">
+                  New User Quick Start Guide
+                </span>
+                <span className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                  ₹5 / Task • Instant UPI
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                SubMe par paise kaise kamayein? (3 Simple Steps)
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  if (filteredCampaigns.length > 0) {
+                    onSelectCampaign(filteredCampaigns[0]);
+                  } else {
+                    onNavigate('tasks');
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                <span>Pehla Task Shuru Karein (Earn ₹5)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-3 border-t border-amber-500/20">
+            <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0">
+                1
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Task Chuno</h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  Neeche diye gaye kisi bhi YouTube video ya Instagram Reel par click karein.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0">
+                2
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">3 Min Dekhein & Subscribe Karein</h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  Video ko kam se kam 3 minute play karein aur creator ka channel subscribe karein.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-xs shrink-0">
+                3
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quiz Answer = ₹5 Turant Credit!</h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  Chhota sawal answer karein aur turant 5 BUGs (₹5) paayein. Minimum ₹50 hote hi UPI withdraw karein!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* 3. CINEMATIC HERO SPOTLIGHT: 16:9 Aspect Ratio with Reference-Grade Scrim */}
