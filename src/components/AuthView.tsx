@@ -23,7 +23,8 @@ import {
   TrendingUp,
   HelpCircle,
   Award,
-  Clock
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
 import { getYouTubeAvatarUrl, extractYouTubeHandle } from '../utils/youtubeAvatar';
@@ -204,38 +205,32 @@ export const AuthView: React.FC<AuthViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-[#0B1118] flex flex-col justify-between text-slate-800 dark:text-slate-100 transition-colors duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-[#0B1118] flex flex-col justify-between text-deep-ocean dark:text-slate-100 transition-colors duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
       
-      {/* 1. TOP HEADER */}
-      <header className="w-full px-4 sm:px-8 py-3.5 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0E1620]/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 p-0.5 shadow-subtle shrink-0 flex items-center justify-center">
-            <img src="/app-logo.png" alt="SubMe" className="w-full h-full rounded-lg object-cover" />
+      {/* 1. TOP NAVBAR (Matching SubMe Application Navbar) */}
+      <header className="h-14 px-4 sm:px-6 md:px-8 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-[#0E1620]/90 backdrop-blur-md flex items-center justify-between select-none z-20 shrink-0 sticky top-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-md overflow-hidden bg-slate-900 border border-slate-700 p-0.5 shadow-2xs flex items-center justify-center shrink-0">
+            <img src="/app-logo.png" alt="SubMe" className="w-full h-full rounded-[3px] object-cover" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-extrabold tracking-tight text-deep-ocean dark:text-white uppercase">
-                SubMe
-              </span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-matcha-green/30 text-matcha-dark dark:bg-emerald-950/70 dark:text-[#C7DFA3] border border-matcha-green/50 dark:border-emerald-800/60">
-                1 BUG = ₹1 INR
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
-              India's #1 Creator Growth &amp; Task Earning Platform
-            </p>
+          <span className="text-slate-400 dark:text-slate-500 font-medium text-xs">
+            Console
+          </span>
+          <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 shrink-0" />
+          <div className="flex items-center gap-1.5 font-bold text-deep-ocean dark:text-slate-100 tracking-tight text-xs truncate">
+            <span>Creator Authentication &amp; Growth Network</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-[#C7DFA3] text-xs font-mono font-bold">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>+2 BUGs Per Task Guaranteed</span>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#16222F] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 font-mono text-[11px] font-semibold">
+            <Coins className="w-3.5 h-3.5 text-emerald-500" />
+            <span>1 BUG = 1 Growth Credit</span>
           </div>
 
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-[#131D28] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-subtle"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-[#131D28] border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-subtle"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? (
@@ -247,164 +242,166 @@ export const AuthView: React.FC<AuthViewProps> = ({
         </div>
       </header>
 
-      {/* 2. MAIN 2-COLUMN ONBOARDING & AUTH HERO */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+      {/* 2. MAIN VIEWPORT (Matching SubMe Studio Layout) */}
+      <main className="px-4 sm:px-6 md:px-8 py-5 sm:py-6 space-y-6 max-w-7xl mx-auto w-full flex-1 select-none">
         
-        {/* BANNER FOR FIRST TIME VISITORS: "WEBSITE PAR KYA KARNA HAI?" */}
-        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-[#1E2C39] text-white shadow-card relative overflow-hidden border border-emerald-400/30">
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-mono font-bold tracking-wide uppercase">
-                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                <span>Naye Users Ke Liye Guide</span>
-              </div>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight">
-                SubMe par aakar kya karna hai? (How It Works)
-              </h2>
-              <p className="text-xs sm:text-sm text-emerald-50 max-w-2xl leading-relaxed">
-                Yahan par aap <b>3 minute videos dekhkar aur channel subscribe karke har task par 2 BUGs kama sakte hain</b>, ya phir <b>apne YouTube/Instagram channel ke liye real subscribers paane ka task laga sakte hain!</b>
-              </p>
+        {/* Studio Sub-Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight text-deep-ocean dark:text-slate-100">
+                Creator Growth Command Center
+              </h1>
+              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-[#C7DFA3] border border-emerald-200 dark:border-emerald-800/60 uppercase">
+                MUTUAL EXCHANGE
+              </span>
             </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Increase your YouTube Subscribers, Instagram Followers, and 3-Minute Real Watch Time through community tasks.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center font-mono">
-                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Har Task Par</span>
-                <span className="text-xl font-extrabold text-yellow-300">2 BUGs</span>
-                <span className="text-[9px] text-emerald-100 block">Instant Wallet Credit</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center font-mono">
-                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Minimum Payout</span>
-                <span className="text-xl font-extrabold text-white">50 BUGs</span>
-                <span className="text-[9px] text-emerald-100 block">Seedhe UPI / Bank (₹50)</span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+            <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1.5 shadow-subtle">
+              <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+              <span>14,200+ Creators</span>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-[#C7DFA3] font-bold flex items-center gap-1.5 shadow-subtle">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>3 Min Retention Lock</span>
+            </span>
           </div>
         </div>
 
-        {/* 2-COLUMN GRID: LEFT = 3-STEP EXPLAINER & PROOF, RIGHT = AUTH FORM */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* 2-Column Composition: 7 cols (Growth Guide) + 5 cols (Auth Form) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* LEFT COLUMN: STEP-BY-STEP "KAISE KAAM KARTA HAI" (7 COLS) */}
+          {/* Left Column (7 cols): How SubMe Creator Exchange Works */}
           <div className="lg:col-span-7 space-y-5">
             
-            {/* Visual 3-Step Guide */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
+            {/* Explainer Card 1 */}
+            <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Play className="w-4 h-4 text-emerald-600 dark:text-[#C7DFA3] fill-emerald-600 dark:fill-[#C7DFA3]" />
-                  <span>3 Aasan Steps Me Paise Kamao:</span>
-                </h3>
-                <span className="text-xs font-mono font-bold text-emerald-600 dark:text-[#C7DFA3] bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">
-                  100% Free • No Investment
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm sm:text-base font-bold text-deep-ocean dark:text-slate-100">
+                    SubMe Par Channel Grow Kaise Hota Hai?
+                  </h2>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-[#C7DFA3] bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">
+                  Zero Bots • 100% Real Humans
                 </span>
               </div>
 
-              {/* Step 1 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-subtle">
-                  1
-                </div>
-                <div className="space-y-0.5 flex-1">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    Apna Pasandida Video Task Chuno
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Website par daily YouTube videos, Shorts aur Instagram Reels ke live tasks aate hain. Kisi bhi task par click karke video play karein.
-                  </p>
-                </div>
-              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                SubMe ek <b>real creators ki mutual growth community</b> hai. Yahan creators ek doosre ki videos ko 3 minute dekhte hain aur subscribe karke <b>BUGs</b> earn karte hain. Unhi BUGs se <b>apne YouTube channel ya Instagram reel par real subscribers, followers aur genuine watch time badhate hain!</b>
+              </p>
 
-              {/* Step 2 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-subtle">
-                  2
+              {/* 3 Step Flow */}
+              <div className="space-y-3 pt-1">
+                
+                {/* Step 1 */}
+                <div className="flex items-start gap-3 p-3.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
+                  <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-[#16222F] text-slate-700 dark:text-[#C7DFA3] font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-slate-300 dark:border-slate-700">
+                    1
+                  </div>
+                  <div className="space-y-0.5 flex-1">
+                    <h3 className="text-xs font-bold text-deep-ocean dark:text-white">
+                      Doosre Creators Ki Videos Dekhein (+2 BUGs)
+                    </h3>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Dashboard par YouTube videos, Shorts ya Instagram Reels ko 3 minute dekhein aur channel subscribe karein. Quick attention quiz answer karte hi wallet me <b>+2 BUGs</b> credit milte hain.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-0.5 flex-1">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    3 Minute Video Dekho &amp; Channel Subscribe Karo
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Timer 3 minute ka chalta hai. 3 minute poora hote hi Step 1 button se creator ke official channel ko YouTube/Instagram par subscribe karein.
-                  </p>
-                </div>
-              </div>
 
-              {/* Step 3 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0 shadow-subtle">
-                  3
+                {/* Step 2 */}
+                <div className="flex items-start gap-3 p-3.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
+                  <div className="w-7 h-7 rounded-lg bg-slate-200/80 dark:bg-[#16222F] text-slate-700 dark:text-[#C7DFA3] font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-slate-300 dark:border-slate-700">
+                    2
+                  </div>
+                  <div className="space-y-0.5 flex-1">
+                    <h3 className="text-xs font-bold text-deep-ocean dark:text-white">
+                      Earn Kiye Hue BUGs Se Apna Task Lagayein
+                    </h3>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Kamaaye hue BUGs se apna video ya reel task banayein (Standard Task = 50 BUGs, VIP Top Task = 200 BUGs). Agar jaldi boost chahiye toh aap direct UPI deposit se bhi BUGs top-up kar sakte hain.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-0.5 flex-1">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    Quiz Ka Answer Do aur Turant +2 BUGs Paao!
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Video se jude ek aasan MCQ sawal ka answer select karein. Submit karte hi instant aapke SubMe wallet me <b>2 BUGs</b> credit ho jayenge!
-                  </p>
-                </div>
-              </div>
 
-              {/* Step 4: Cashout */}
-              <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300/80 dark:border-emerald-800/60 rounded-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-[#C7DFA3] flex items-center justify-center shrink-0 font-bold">
-                  ₹
+                {/* Step 3 */}
+                <div className="flex items-start gap-3 p-3.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-[#C7DFA3] font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/30">
+                    3
+                  </div>
+                  <div className="space-y-0.5 flex-1">
+                    <h3 className="text-xs font-bold text-deep-ocean dark:text-white">
+                      Real Subscribers &amp; 3-Minute Watch Time Badhayein
+                    </h3>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                      SubMe community ke hazaaron genuine active creators aapki video ko 3-min poora watch karenge aur channel ko subscribe karenge. Isse aapki YouTube Audience Retention aur Algorithm boost hoti hai!
+                    </p>
+                  </div>
                 </div>
-                <div className="text-xs">
-                  <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-                    Instant UPI Withdrawal (Google Pay / PhonePe / Paytm):
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-300">
-                    Jaise hi wallet me minimum ₹50 ho jayein, apna UPI ID daal kar seedhe bank account me transfer lein.
-                  </span>
-                </div>
+
               </div>
             </div>
 
-            {/* Creators Section: "Apna Channel Grow Karna Hai?" */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-2.5">
-              <div className="flex items-center gap-2 text-deep-ocean dark:text-white font-bold text-xs sm:text-sm">
-                <TrendingUp className="w-4 h-4 text-blue-500" />
-                <span>YouTubers &amp; Instagram Creators Ke Liye:</span>
+            {/* Quality & Algorithm Metrics Card */}
+            <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-3 font-mono">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                <span className="font-bold text-deep-ocean dark:text-slate-100 uppercase tracking-tight flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>Channel Retention &amp; Algorithm Highlights</span>
+                </span>
+                <span className="text-[10px] text-slate-400">ENGINE V2</span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Agar aap naye creator hain aur apna channel grow karna chahte hain, toh yahan <b>apna task lagayein</b>. SubMe ke real Indian users aapki video ko poora 3 minute watch karenge aur aapke channel ko subscribe karenge! 100% genuine real attention guarantee.
-              </p>
-              <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px] text-center">
-                <div className="p-2 bg-slate-50 dark:bg-[#0E1620] rounded-lg border border-slate-200 dark:border-slate-800">
-                  <span className="font-bold text-slate-900 dark:text-white block">Standard Task</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹50 (50 BUGs)</span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <span className="font-bold text-deep-ocean dark:text-white block">180s Retention</span>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans leading-tight">
+                    High average view duration YouTube algorithm ko push karti hai.
+                  </p>
                 </div>
-                <div className="p-2 bg-slate-50 dark:bg-[#0E1620] rounded-lg border border-slate-200 dark:border-slate-800">
-                  <span className="font-bold text-slate-900 dark:text-white block">VIP Top Task</span>
-                  <span className="text-amber-500 font-bold">₹200 (200 BUGs)</span>
+
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <span className="font-bold text-deep-ocean dark:text-white block">Real Indian Creators</span>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans leading-tight">
+                    100% genuine audience. Zero fake bots, real active Indian channels.
+                  </p>
                 </div>
-                <div className="p-2 bg-slate-50 dark:bg-[#0E1620] rounded-lg border border-slate-200 dark:border-slate-800">
-                  <span className="font-bold text-slate-900 dark:text-white block">Referral Bonus</span>
-                  <span className="text-blue-500 font-bold">+₹5 Per Friend</span>
+
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0E1620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <span className="font-bold text-deep-ocean dark:text-white block">Fast Monetization</span>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-sans leading-tight">
+                    4,000 hrs watch time aur 1,000 subscribers ke milestones tezi se paayein.
+                  </p>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* RIGHT COLUMN: REGISTRATION & LOGIN FORM (5 COLS) */}
+          {/* Right Column (5 cols): Clean Creator Auth Form */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-elevated space-y-5">
+            <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#131D28] border border-slate-200 dark:border-slate-800 shadow-card space-y-4">
               
-              {/* Form Title & Benefit */}
-              <div className="text-center space-y-1 pb-1">
-                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  {mode === 'signup' ? 'Start Free • Free Account Banayein' : 'Welcome Back • Sign In'}
-                </h3>
+              {/* Form Title & Subtitle */}
+              <div className="space-y-1">
+                <h2 className="text-base sm:text-lg font-bold text-deep-ocean dark:text-white tracking-tight">
+                  {mode === 'signup' ? 'Create Creator Account' : 'Sign In To Creator Console'}
+                </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {mode === 'signup' 
-                    ? '10 second me sign up karein aur pehla task shuru karein' 
-                    : 'Apne dashboard, wallet aur live tasks ko access karein'}
+                    ? 'Connect your channel and join India’s #1 growth exchange' 
+                    : 'Manage your growth tasks, track progress & stats'}
                 </p>
               </div>
 
-              {/* Mode Switcher Tabs */}
-              <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-100 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-800 font-mono text-xs font-bold">
+              {/* Mode Switcher Tabs (Matching SubMe segmented controls) */}
+              <div className="grid grid-cols-2 p-1 rounded-lg bg-slate-100 dark:bg-[#0E1620] border border-slate-200 dark:border-slate-800 font-mono text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => {
@@ -412,13 +409,13 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     setError(null);
                     setSuccessMsg(null);
                   }}
-                  className={`py-2 text-center rounded-lg transition-all cursor-pointer ${
+                  className={`py-1.5 text-center rounded-md transition-all cursor-pointer ${
                     mode === 'signup' 
-                      ? 'bg-emerald-600 text-slate-950 font-extrabold shadow-subtle' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-white shadow-subtle border border-slate-200/80 dark:border-slate-700 font-bold' 
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Sign Up (Naye User)
+                  Sign Up (New)
                 </button>
                 <button
                   type="button"
@@ -427,49 +424,49 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     setError(null);
                     setSuccessMsg(null);
                   }}
-                  className={`py-2 text-center rounded-lg transition-all cursor-pointer ${
+                  className={`py-1.5 text-center rounded-md transition-all cursor-pointer ${
                     mode === 'signin' 
-                      ? 'bg-[#1E2C39] dark:bg-slate-700 text-white shadow-subtle' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-white dark:bg-[#131D28] text-deep-ocean dark:text-white shadow-subtle border border-slate-200/80 dark:border-slate-700 font-bold' 
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   Sign In (Login)
                 </button>
               </div>
 
-              {/* Error & Success Messages */}
+              {/* Error & Success Alerts */}
               {error && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium animate-in fade-in">
+                <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium animate-in fade-in">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                   <span>{error}</span>
                 </div>
               )}
 
               {successMsg && (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/60 flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-in fade-in font-mono">
+                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/60 flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-in fade-in font-mono">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                   <span>{successMsg}</span>
                 </div>
               )}
 
-              {/* ================= SIGN UP FORM (DEFAULT) ================= */}
+              {/* ================= SIGN UP FORM ================= */}
               {mode === 'signup' && (
                 <form onSubmit={handleSignUp} className="space-y-3.5">
                   
                   {/* Name */}
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                      Aapka Naam / Channel Title <span className="text-rose-500">*</span>
+                      Channel Title / Creator Name <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <User className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type="text"
                         required
                         value={signUpName}
                         onChange={(e) => setSignUpName(e.target.value)}
                         placeholder="e.g. Aman Verma ya Tech Creator"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                     </div>
                   </div>
@@ -480,14 +477,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       Username / Handle <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <AtSign className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <AtSign className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type="text"
                         required
                         value={signUpHandle}
                         onChange={(e) => setSignUpHandle(e.target.value)}
                         placeholder="@amanverma"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                     </div>
                   </div>
@@ -498,14 +495,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       Email Address <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <Mail className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type="email"
                         required
                         value={signUpEmail}
                         onChange={(e) => setSignUpEmail(e.target.value)}
                         placeholder="yourname@gmail.com"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                     </div>
                   </div>
@@ -513,10 +510,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   {/* Password */}
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                      Password (Kam se kam 6 akshar) <span className="text-rose-500">*</span>
+                      Password (Min 6 characters) <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <Lock className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
@@ -524,31 +521,31 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         value={signUpPassword}
                         onChange={(e) => setSignUpPassword(e.target.value)}
                         placeholder="Create password"
-                        className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-10 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
 
                   {/* YouTube Channel URL (Optional) */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                      YouTube Channel Link <span className="text-slate-400 font-normal">(Optional)</span>
+                      YouTube Channel Link <span className="text-slate-400 font-normal">(Optional - Avatar &amp; Subscribers Sync)</span>
                     </label>
                     <div className="relative">
-                      <Tv className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <Tv className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type="url"
                         value={signUpChannelUrl}
                         onChange={(e) => setSignUpChannelUrl(e.target.value)}
                         placeholder="https://youtube.com/@yourchannel"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                     </div>
                   </div>
@@ -561,7 +558,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       </label>
                       <span className="text-[10px] font-mono text-emerald-600 dark:text-[#C7DFA3] font-bold flex items-center gap-1">
                         <Gift className="w-3 h-3" />
-                        Friend gets +₹5
+                        Bonus +5 BUGs
                       </span>
                     </div>
                     <input
@@ -569,17 +566,17 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       value={signUpReferralCode}
                       onChange={(e) => setSignUpReferralCode(e.target.value.toUpperCase())}
                       placeholder="e.g. SUBME-XXXXX"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle uppercase tracking-wider"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle uppercase tracking-wider"
                     />
                   </div>
 
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-subtle flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full py-2.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark dark:hover:bg-slate-600 text-white font-bold text-xs shadow-subtle transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Free Account Banayein &amp; Earning Shuru Karein</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Free Creator Account Banayein &amp; Channel Grow Karein</span>
                   </button>
 
                   <div className="text-center pt-1">
@@ -591,7 +588,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                           setMode('signin');
                           setError(null);
                         }}
-                        className="font-bold text-emerald-600 dark:text-[#C7DFA3] hover:underline cursor-pointer"
+                        className="font-bold text-deep-ocean dark:text-slate-200 hover:underline cursor-pointer"
                       >
                         Sign In Karein
                       </button>
@@ -603,7 +600,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
               {/* ================= SIGN IN FORM ================= */}
               {mode === 'signin' && (
-                <form onSubmit={handleSignIn} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-3.5">
                   
                   {/* Email Input */}
                   <div className="space-y-1">
@@ -611,14 +608,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <Mail className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type="email"
                         required
                         value={signInEmail}
                         onChange={(e) => setSignInEmail(e.target.value)}
                         placeholder="yourname@gmail.com ya admin@subme.io"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                     </div>
                   </div>
@@ -629,21 +626,21 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <Lock className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={signInPassword}
                         onChange={(e) => setSignInPassword(e.target.value)}
                         placeholder="Enter password"
-                        className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-500 shadow-subtle"
+                        className="w-full pl-9 pr-10 py-2 rounded-lg bg-slate-50 dark:bg-[#0E1620] text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 dark:focus:border-slate-500 shadow-subtle"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -651,22 +648,22 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-xl bg-[#1E2C39] hover:bg-[#16222F] dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-subtle flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full py-2.5 rounded-lg bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark dark:hover:bg-slate-600 text-white font-bold text-xs shadow-subtle transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
                   >
                     <span>Sign In &bull; Dashboard Kholein</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
                   <div className="text-center pt-1">
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Naye user hain?{' '}
+                      Naye creator hain?{' '}
                       <button
                         type="button"
                         onClick={() => {
                           setMode('signup');
                           setError(null);
                         }}
-                        className="font-bold text-emerald-600 dark:text-[#C7DFA3] hover:underline cursor-pointer"
+                        className="font-bold text-deep-ocean dark:text-slate-200 hover:underline cursor-pointer"
                       >
                         Sign Up Karein (Free)
                       </button>
@@ -688,22 +685,22 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
       </main>
 
-      {/* 3. FOOTER WITH TRUST BADGES */}
-      <footer className="w-full py-4 px-4 sm:px-8 border-t border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0E1620]/70 text-xs font-mono text-slate-500 dark:text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      {/* 3. CONSOLE FOOTER */}
+      <footer className="w-full py-3 px-4 sm:px-8 border-t border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0E1620]/70 text-xs font-mono text-slate-500 dark:text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800 dark:text-slate-200 uppercase">SubMe Engine</span>
+            <span className="font-bold text-deep-ocean dark:text-slate-200 uppercase">SubMe Growth Engine</span>
             <span>&bull;</span>
-            <span>1 BUG = ₹1 INR</span>
+            <span>1 BUG = 1 Growth Credit</span>
             <span>&bull;</span>
-            <span>Minimum UPI Payout: ₹50</span>
+            <span>Real Indian Creator Community</span>
           </div>
           <div className="flex items-center gap-3 text-[11px]">
             <span className="flex items-center gap-1 text-emerald-600 dark:text-[#C7DFA3]">
-              <ShieldCheck className="w-3.5 h-3.5" /> 100% Genuine Watch Time
+              <ShieldCheck className="w-3.5 h-3.5" /> 3-Min Retention Lock
             </span>
             <span>&bull;</span>
-            <span>NPCI Verified UPI Transfers</span>
+            <span>Anti-Cheat Monitored</span>
           </div>
         </div>
       </footer>

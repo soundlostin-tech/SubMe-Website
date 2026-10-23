@@ -356,6 +356,7 @@ export const App: React.FC = () => {
     const result = await syncAllFeaturedCreators(campaigns, FEATURED_CREATORS);
     if (result.syncedCount > 0) {
       setCampaigns(result.updatedCampaigns);
+      localStorage.setItem('subme_campaigns_v12', JSON.stringify(result.updatedCampaigns));
       const now = Date.now();
       const timeFormatted = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const newAuditLog: AuditSentinelEvent = {

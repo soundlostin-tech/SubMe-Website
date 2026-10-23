@@ -200,15 +200,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[11px] font-bold tracking-wider uppercase text-amber-600 dark:text-amber-400">
-                  New User Quick Start Guide
+                <span className="text-[11px] font-bold tracking-wider uppercase text-amber-600 dark:text-amber-400 font-mono">
+                  Creator Growth Engine
                 </span>
                 <span className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
-                  2 BUGs / Task • Instant Rewards
+                  3 Min Attention Lock • Real Growth
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                SubMe par paise kaise kamayein? (3 Simple Steps)
+                SubMe par Subscribers &amp; Watch Time Kaise Badhayein? (3 Simple Steps)
               </h2>
             </div>
 
@@ -224,7 +224,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Zap className="w-4 h-4 fill-current" />
-                <span>Pehla Task Shuru Karein (+2 BUGs)</span>
+                <span>Pehla Task Dekhein (+2 BUGs)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -232,37 +232,37 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-3 border-t border-amber-500/20">
             <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0 font-mono">
                 1
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Task Chuno</h3>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">3 Min Dekhein &amp; Subscribe Karein</h3>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  Neeche diye gaye kisi bhi YouTube video ya Instagram Reel par click karein.
+                  Doosre creators ki videos/reels ko 3 min dekhein aur subscribe karein.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black flex items-center justify-center text-xs shrink-0 font-mono">
                 2
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">3 Min Dekhein & Subscribe Karein</h3>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quiz Answer = +2 BUGs Earn Karein</h3>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  Video ko kam se kam 3 minute play karein aur creator ka channel subscribe karein.
+                  MCQ sawal answer karke turant apne wallet me +2 BUGs credit paayein.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-500/20">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-xs shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black flex items-center justify-center text-xs shrink-0 font-mono">
                 3
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quiz Answer = +2 BUGs Turant Credit!</h3>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Apna Task Lagakar Channel Grow Karein!</h3>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                  Chhota sawal answer karein aur turant 2 BUGs paayein. Minimum 50 BUGs hote hi UPI withdraw karein!
+                  Earned BUGs se apna video/reel task lagayein aur real subscribers &amp; watch time paayein!
                 </p>
               </div>
             </div>

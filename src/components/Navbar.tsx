@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <ArrowUpRight className="w-3 h-3 text-slate-400" />
                 </button>
 
-                {onOpenSupabase && (
+                {user?.role === 'admin' && onOpenSupabase && (
                   <button
                     onClick={() => {
                       setShowUserMenu(false);

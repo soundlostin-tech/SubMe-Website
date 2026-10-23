@@ -54,13 +54,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   };
 
   const handleSyncYT = async () => {
-    if (!onSyncYouTube) return;
+    if (!onSyncYouTube || isSyncingYouTube) return;
     setIsSyncingYouTube(true);
+    setSyncYouTubeMsg(null);
     try {
-      const count = await onSyncYouTube();
+      const count = await Promise.race([
+        onSyncYouTube(),
+        new Promise<number>((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 8000)),
+      ]);
       setSyncYouTubeMsg(`Updated ${count} featured channels with today's newest YouTube videos.`);
       setTimeout(() => setSyncYouTubeMsg(null), 4000);
-    } catch (e) {
+    } catch (_e) {
       setSyncYouTubeMsg('Failed to sync YouTube feeds. Please retry.');
       setTimeout(() => setSyncYouTubeMsg(null), 3000);
     } finally {

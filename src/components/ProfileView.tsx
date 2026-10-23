@@ -381,53 +381,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       </div>
 
-      {/* 5. Supabase Cloud Database Integration Card */}
-      <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131D28] space-y-4 shadow-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              isSupabaseLive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-slate-100 dark:bg-[#16222F] text-slate-400 border border-slate-200 dark:border-slate-700'
-            }`}>
-              <Database className="w-4 h-4" />
+      {/* 5. Supabase Cloud Database Integration Card (Admin Only) */}
+      {user.role === 'admin' && (
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131D28] space-y-4 shadow-card">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                isSupabaseLive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-slate-100 dark:bg-[#16222F] text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}>
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>Supabase Cloud Integration</span>
+                  <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md border ${
+                    isSupabaseLive
+                      ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-400'
+                      : 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                  }`}>
+                    {isSupabaseLive ? 'Connected' : 'Setup / Key Needed'}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Target Project: <code className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{SUPABASE_PROJECT_ID}</code> (https://{SUPABASE_PROJECT_ID}.supabase.co)
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Supabase Cloud Integration</span>
-                <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md border ${
-                  isSupabaseLive
-                    ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-400'
-                    : 'bg-amber-500/10 border-amber-500/30 text-amber-500'
-                }`}>
-                  {isSupabaseLive ? 'Connected' : 'Setup / Key Needed'}
-                </span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Target Project: <code className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{SUPABASE_PROJECT_ID}</code> (https://{SUPABASE_PROJECT_ID}.supabase.co)
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <a
-              href={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_ID}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 text-xs font-mono text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5 shadow-subtle"
-            >
-              <span>Supabase Console</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-            {onOpenSupabase && (
-              <button
-                onClick={onOpenSupabase}
-                className="px-3.5 py-1.5 bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white font-semibold font-mono text-xs rounded-lg transition-colors cursor-pointer shadow-subtle"
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_ID}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 text-xs font-mono text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5 shadow-subtle"
               >
-                Manage Credentials
-              </button>
-            )}
+                <span>Supabase Console</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              {onOpenSupabase && (
+                <button
+                  onClick={onOpenSupabase}
+                  className="px-3.5 py-1.5 bg-deep-ocean dark:bg-slate-700 hover:bg-deep-ocean-dark text-white font-semibold font-mono text-xs rounded-lg transition-colors cursor-pointer shadow-subtle"
+                >
+                  Manage Credentials
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
